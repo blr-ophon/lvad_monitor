@@ -1,0 +1,32 @@
+[
+  {
+    "arguments": [
+      "/sbin/arm-none-eabi-gcc",
+      "-c",
+      "-mcpu=cortex-m4",
+      "-mthumb",
+      "-mfpu=fpv4-sp-d16",
+      "-mfloat-abi=hard",
+      "-DUSE_HAL_DRIVER",
+      "-DSTM32F303xE",
+      "-ICore/Inc",
+      "-IDrivers/STM32F3xx_HAL_Driver/Inc",
+      "-IDrivers/STM32F3xx_HAL_Driver/Inc/Legacy",
+      "-IDrivers/CMSIS/Device/ST/STM32F3xx/Include",
+      "-IDrivers/CMSIS/Include",
+      "-Og",
+      "-Wall",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-g",
+      "-gdwarf-2",
+      "-Wa,-a,-ad,-alms=build/main.lst",
+      "-o",
+      "build/main.o",
+      "Core/Src/main.c"
+    ],
+    "directory": "/home/myshkin/Downloads/git/lvad_monitor/tester/stm32tester",
+    "file": "/home/myshkin/Downloads/git/lvad_monitor/tester/stm32tester/Core/Src/main.c",
+    "output": "/home/myshkin/Downloads/git/lvad_monitor/tester/stm32tester/build/main.o"
+  }
+]

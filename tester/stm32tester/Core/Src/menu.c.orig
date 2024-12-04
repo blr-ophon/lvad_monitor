@@ -1,0 +1,31 @@
+#include "menu.h"
+
+
+int UART_ready = 0;
+
+void UART_RxCpltCallback(UART_HandleTypeDef *UARTHandle){
+    printf("Receive_complete\r\n");
+}
+
+void proccessInput(uint8_t* msg, int size){
+    char *msg_str = (char*) msg;
+
+    //char *endptr = NULL;
+    //int opt = strtol(msg_str, &endptr, size);
+
+    int opt = atoi(msg_str);
+    switch(opt){
+        case 1:
+            printf("1_received\r\n");
+            break;
+        case 2:
+            printf("2_received\r\n");
+            break;
+        case 3:
+            printf("3_received\r\n");
+            break;
+        default:
+            printf("Unknown_received\r\n");
+            break;
+    }
+}
