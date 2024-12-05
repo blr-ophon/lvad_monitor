@@ -54,11 +54,12 @@ Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash_ex.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c_ex.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_exti.c \
-Drivers/STM32F3xx_HAL_Driver/Src/retarget.c \
-Drivers/STM32F3xx_HAL_Driver/Src/fgen.c \
 Core/Src/system_stm32f3xx.c \
 Core/Src/sysmem.c \
-Core/Src/syscalls.c
+Core/Src/syscalls.c \
+Core/Src/retarget.c \
+Core/Src/fgen.c \
+Core/Src/msg.c
 
 # ASM sources
 ASM_SOURCES =  \

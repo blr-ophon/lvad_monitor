@@ -44,6 +44,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+extern uint8_t recvBuf[100];
+extern uint8_t msg_ready;
 
 /* USER CODE END PV */
 
@@ -111,9 +113,10 @@ int main(void)
     FGen_simple(wav2_samples, 100, wav2, 30);
 
     for(int i = 0; i < 100; i++){
-        printf("%f ", wav1_samples[i]);
+        //printf("#D#%f#%f#$", wav1_samples[i], wav2_samples[i]);
     }
 
+    HAL_UART_Receive_IT(&huart2, recvBuf, 1);
     
     /* USER CODE END 2 */
 
@@ -122,6 +125,12 @@ int main(void)
     while (1)
     {
         /* USER CODE END WHILE */
+
+        if(msg_ready){
+            char *msg = "MSG_RECEIVED\r\n";
+            HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+            msg_ready = 0;
+        }
 
         /* USER CODE BEGIN 3 */
     }

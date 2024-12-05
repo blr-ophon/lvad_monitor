@@ -36,8 +36,8 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 #include "retarget.h"
-#include "menu.h"
 #include "fgen.h"
+#include "msg.h"
 
 /* USER CODE END Includes */
 
