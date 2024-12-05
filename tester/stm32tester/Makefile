@@ -59,6 +59,7 @@ Core/Src/sysmem.c \
 Core/Src/syscalls.c \
 Core/Src/retarget.c \
 Core/Src/fgen.c \
+Core/Src/adc_data.c \
 Core/Src/msg.c
 
 # ASM sources

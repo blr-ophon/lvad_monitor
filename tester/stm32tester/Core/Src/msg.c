@@ -2,14 +2,16 @@
 
 #define RECV_BUFFER_SIZE 100
 
-
 uint8_t recvBuf[RECV_BUFFER_SIZE] = {0};
 uint8_t recvBufIndex = 0;
-int msg_ready = 0;
+extern int data_streams_n;
+extern int ADC_send;
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
     // Previous message was not processed or Buffer is full
-    if(msg_ready || recvBufIndex >= RECV_BUFFER_SIZE -1){
+    if(recvBufIndex >= RECV_BUFFER_SIZE -1){
+        //Discard all in buffer
+        recvBufIndex = 0;
         goto out;
     }
 
@@ -19,8 +21,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 
     uint8_t byteReceived = recvBuf[recvBufIndex++];
 
-    if((char) byteReceived == 'a'){
+    if((char) byteReceived == '$'){
+        __HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
         processMsg(recvBuf);
+        __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
         recvBufIndex = 0;
     }
 out:
@@ -28,6 +32,32 @@ out:
 }
 
 void processMsg(uint8_t *msg){
-    // TODO: parse and convert
-    msg_ready = 1;
+    // TODO
+    char *msg_str = (char*) msg;
+    char *pMsgStart = strchr(msg_str, '#');
+
+    if(pMsgStart == NULL){
+        //No '#' found. Discard message
+        recvBufIndex = 0;
+        return;
+    }
+
+    char opt = pMsgStart[1];
+    switch(opt){
+        case '?':
+            printf("#!#%d#$", data_streams_n);
+            break;
+        case 'A':
+            // Send analog data
+            ADC_send = SET;
+            printf("Send analog data\r\n");
+            break;
+        case 'S':
+            // Stop sending
+            printf("Stop\r\n");
+            ADC_send = RESET;
+            break;
+        default:
+            printf("Unrecognized\r\n");
+    }
 }

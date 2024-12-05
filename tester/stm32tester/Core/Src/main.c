@@ -45,7 +45,8 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 
 extern uint8_t recvBuf[100];
-extern uint8_t msg_ready;
+int data_streams_n = 2;
+int ADC_send = RESET;
 
 /* USER CODE END PV */
 
@@ -96,27 +97,9 @@ int main(void)
 
     RetargetInit(&huart2);
 
-    float wav1_samples[100] = {0};
-    float wav2_samples[100] = {0};
-    Wave wav1 = {
-        WAV_SINE,       
-        10,
-        5
-    };
-    Wave wav2 = {
-        WAV_SQUARE,       
-        10,
-        5
-    };
-
-    FGen_simple(wav1_samples, 100, wav1, 300);
-    FGen_simple(wav2_samples, 100, wav2, 30);
-
-    for(int i = 0; i < 100; i++){
-        //printf("#D#%f#%f#$", wav1_samples[i], wav2_samples[i]);
-    }
 
     HAL_UART_Receive_IT(&huart2, recvBuf, 1);
+    ADCdata_test_generate();
     
     /* USER CODE END 2 */
 
@@ -125,11 +108,8 @@ int main(void)
     while (1)
     {
         /* USER CODE END WHILE */
-
-        if(msg_ready){
-            char *msg = "MSG_RECEIVED\r\n";
-            HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-            msg_ready = 0;
+        while(ADC_send){
+            ADCdata_test_send();
         }
 
         /* USER CODE BEGIN 3 */

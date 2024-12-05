@@ -36,8 +36,7 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 #include "retarget.h"
-#include "fgen.h"
-#include "msg.h"
+#include "adc_data.h"
 
 /* USER CODE END Includes */
 
