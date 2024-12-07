@@ -7,9 +7,9 @@ uint8_t recvBufIndex = 0;
 extern int data_streams_n;
 extern int ADC_send;
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     // Previous message was not processed or Buffer is full
-    if(recvBufIndex >= RECV_BUFFER_SIZE -1){
+    if(recvBufIndex >= RECV_BUFFER_SIZE -1) {
         //Discard all in buffer
         recvBufIndex = 0;
         goto out;
@@ -21,7 +21,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 
     uint8_t byteReceived = recvBuf[recvBufIndex++];
 
-    if((char) byteReceived == '$'){
+    if((char) byteReceived == '$') {
         __HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
         processMsg(recvBuf);
         __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
@@ -31,33 +31,33 @@ out:
     HAL_UART_Receive_IT(huart, &recvBuf[recvBufIndex], 1);
 }
 
-void processMsg(uint8_t *msg){
+void processMsg(uint8_t *msg) {
     // TODO
     char *msg_str = (char*) msg;
     char *pMsgStart = strchr(msg_str, '#');
 
-    if(pMsgStart == NULL){
+    if(pMsgStart == NULL) {
         //No '#' found. Discard message
         recvBufIndex = 0;
         return;
     }
 
     char opt = pMsgStart[1];
-    switch(opt){
-        case '?':
-            printf("#!#%d#$", data_streams_n);
-            break;
-        case 'A':
-            // Send analog data
-            ADC_send = SET;
-            printf("Send analog data\r\n");
-            break;
-        case 'S':
-            // Stop sending
-            printf("Stop\r\n");
-            ADC_send = RESET;
-            break;
-        default:
-            printf("Unrecognized\r\n");
+    switch(opt) {
+    case '?':
+        printf("#!#%d#$", data_streams_n);
+        break;
+    case 'A':
+        // Send analog data
+        ADC_send = SET;
+        printf("Send analog data\r\n");
+        break;
+    case 'S':
+        // Stop sending
+        printf("Stop\r\n");
+        ADC_send = RESET;
+        break;
+    default:
+        printf("Unrecognized\r\n");
     }
 }

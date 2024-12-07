@@ -1,11 +1,11 @@
 #include "fgen.h"
 
 // Y(t) = Asin(wt)
-static double FGen_SINE(Wave wave, double time){
+static double FGen_SINE(Wave wave, double time) {
     return wave.amp * sin(2*M_PI * wave.freq * time);
 }
 
-static double FGen_SQUARE(Wave wave, double time){
+static double FGen_SQUARE(Wave wave, double time) {
     return (FGen_SINE(wave, time) >= 0) ? wave.amp : -wave.amp;
 }
 
@@ -34,21 +34,21 @@ double (*FGen_WAVEFORM[])(Wave, double) = {
 };
 
 
-void FGen_out(float *sampleBuf, int bufSize, Wave wave, double sample_rate, int duration){
+void FGen_out(float *sampleBuf, int bufSize, Wave wave, double sample_rate, int duration) {
     double period = 1/sample_rate;
     int samples_total = duration/period;
 
-    for(int i = 0; i < samples_total; i++){
-        double time = i*period;     
+    for(int i = 0; i < samples_total; i++) {
+        double time = i*period;
         //fprintf(f, "%f %f\n", time, FGen_WAVEFORM[wave.form](wave, time));
     }
 }
 
-void FGen_simple(float *sampleBuf, int bufSize, Wave wave, double sample_rate){
+void FGen_simple(float *sampleBuf, int bufSize, Wave wave, double sample_rate) {
     double period = 1/sample_rate;
 
-    for(int i = 0; i < bufSize; i++){
-        double time = i*period;     
+    for(int i = 0; i < bufSize; i++) {
+        double time = i*period;
         sampleBuf[i] = FGen_WAVEFORM[wave.form](wave, time);
     }
 }

@@ -8,7 +8,7 @@ class SerialCtrl():
     """
     def __init__(self):
         self.com_list = []
-        self.ser = None         # Serial.Serial
+        self.ser = None         # serial.Serial
         self.status = False     # Indicates successful port opening
 
     def getCOMList(self):
@@ -32,7 +32,7 @@ class SerialCtrl():
             pass
 
         try:
-            # Instantiating automatically tries to open port
+            # Instantiating Serial automatically tries to open port
             self.ser = serial.Serial(
                     port=port,
                     baudrate=baudrate,
@@ -40,11 +40,10 @@ class SerialCtrl():
             )
             self.status = True
             print(f"Opened port: {self.ser.port}")
-
         except Exception as e:
             # Failed opening port
             self.status = False
-            print(f"Failed to open port: {e}")
+            print(f"Error opening port: {e}")
 
     def SerialClose(self):
         """
@@ -53,8 +52,9 @@ class SerialCtrl():
         try:
             self.ser.close()
             self.status = False
-        except:
+        except Exception as e:
             self.status = False
+            print(f"Error closing port: {e}")
 
     @staticmethod
     def isValidPort(port):
