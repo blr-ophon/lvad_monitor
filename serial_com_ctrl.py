@@ -56,6 +56,31 @@ class SerialCtrl():
             self.status = False
             print(f"Error closing port: {e}")
 
+    def SerialSync(self, gui):
+        """
+        Synchronize with microcontroller
+        """
+        # Send initial messages to establish connection and
+        # update attributes based on received info (number of channels)
+        self.threading = True
+        while self.threading:
+            try:
+                self.ser.write(gui.dataCtrl.sync.encode())
+                gui.conn.lbl_sync_status["text"] = "..Sync.."
+                gui.conn.lbl_sync_status["fg"] = "orange"
+                gui.dataCtrl.RowMsg = self.ser.readline()
+            except:
+                pass
+
+
+    def listen(self):
+        # Read chunks of data from serial port
+        pass
+
+    def parseMsg(self):
+        #
+        pass
+
     @staticmethod
     def isValidPort(port):
         """

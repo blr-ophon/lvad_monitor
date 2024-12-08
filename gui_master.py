@@ -1,8 +1,11 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
+from serial_fsm import SerialFSM, FSMState
 
-class RootGUI:
+# TODO: geometry variables in separated file
+
+class RootGUI():
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("LVAD Monitor")
@@ -17,16 +20,16 @@ class CommGUI():
         self.root = root
         self.serialCtrl = serialCtrl
         self.conn = None
-        # Create Frame
+        self.serial_fsm = SerialFSM(serialCtrl, self)
+
+        # FRAME
         self.frame = tk.LabelFrame(master=root, text="Communication", padx=5,
                                    pady=5, bg="white")
-        # Create Label inside frame
+        # WIDGETS
         self.lbl_com = tk.Label(self.frame, text="Available Port(s): ",
                                 bg="white", width=15, anchor="w")
         self.lbl_bd = tk.Label(self.frame, text="Baud rate: ",
                                bg="white", width=15, anchor="w")
-        self.ComOptionMenu()
-        self.BaudOptionMenu()
 
         # Create 'Refresh' and 'Connect' buttons
         self.btn_refresh = tk.Button(master=self.frame, text="Refresh",
@@ -34,6 +37,9 @@ class CommGUI():
         self.btn_connect = tk.Button(master=self.frame, text="Connect",
                                      width=10, state="disabled",
                                      command=self.serial_connect)
+
+        self.ComOptionMenu()
+        self.BaudOptionMenu()
 
         self.padx = 20
         self.pady = 5
@@ -106,14 +112,13 @@ class CommGUI():
         self.connect_ctrl(None)
 
     def serial_connect(self):
+        # TODO: change 'connect' to 'open port' to avoid confusion with fsm connect state
         """
         Executed when 'Connect' button is pressed. Try to establish serial
         connection
         """
-
-        # If currently disconnected
         if self.btn_connect["text"] in "Connect":
-            # Try opening port
+            # Try connecting
             PORT = self.clicked_com.get()
             BAUD = self.clicked_bd.get()
             print(f"{PORT} (baud: {BAUD})")
@@ -128,20 +133,30 @@ class CommGUI():
                 InfoMsg = f"port {self.serialCtrl.ser.port} \
                             successfully opened"
                 messagebox.showinfo("showinfo", InfoMsg)
-                self.conn = ConnGUI(self.root, self.serialCtrl)
+
+                # Create connection manager and start serial fsm thread
+                self.conn = ConnGUI(self.root)
+                # self.serial_fsm.start()
 
             else:
                 ErrorMsg = f"Failure to establish serial connection using\
                             {self.clicked_com.get()}"
                 messagebox.showerror("showerror", ErrorMsg)
         else:
-            # Close the connection
-            self.conn.ConnGUIClose()
-            self.serialCtrl.SerialClose()
-            self.btn_connect["text"] = "Connect"
-            self.btn_refresh["state"] = "active"
-            self.drop_bd["state"] = "active"
-            self.drop_com["state"] = "active"
+            # self.serial_fsm.stop()
+            self.serial_disconnect()
+
+    def serial_disconnect(self):
+        """
+        Close the connection 
+        """
+        self.conn.ConnGUIClose()
+        self.serialCtrl.SerialClose()
+        self.btn_connect["text"] = "Connect"
+        self.btn_refresh["state"] = "active"
+        self.drop_bd["state"] = "active"
+        self.drop_com["state"] = "active"
+
 
     def publish(self):
         """Publish widgets grid on Communication frame"""
@@ -157,13 +172,12 @@ class CommGUI():
         self.btn_connect.grid(column=3, row=3)
 
 
-class ConnGUI:
+class ConnGUI():
     """
     Connection manager menu
     """
-    def __init__(self, root, serialCtrl):
+    def __init__(self, root):
         self.root = root
-        self.serialCtrl = serialCtrl
 
         self.padx = 20
         self.pady = 15
@@ -307,5 +321,5 @@ class ConnGUI:
 
 if __name__ == "__main__":
     RootGUI()
-    CommGUI()
-    ConnGUI()
+    # CommGUI()
+    # ConnGUI()
