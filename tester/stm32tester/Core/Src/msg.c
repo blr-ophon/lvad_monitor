@@ -17,7 +17,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
     //char *msg = "RECEIVED\r\n";
     //HAL_UART_Transmit_IT(huart, (uint8_t*)msg, strlen(msg));
-    printf("RECEIVED (i:%d)\r\n", recvBufIndex);
+    //printf("RECEIVED (i:%d)\r\n", recvBufIndex);
 
     uint8_t byteReceived = recvBuf[recvBufIndex++];
 

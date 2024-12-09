@@ -72,10 +72,15 @@ class SerialCtrl():
             except:
                 pass
 
-
     def listen(self):
-        # Read chunks of data from serial port
-        pass
+        """
+        Poll for messages
+        """
+        msg = self.ser.read_until(b"$")
+        return msg
+
+    def send(self, msg):
+        self.ser.write(msg.encode("utf-8"))
 
     def parseMsg(self):
         #

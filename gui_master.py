@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
@@ -136,7 +137,9 @@ class CommGUI():
 
                 # Create connection manager and start serial fsm thread
                 self.conn = ConnGUI(self.root)
-                # self.serial_fsm.start()
+
+                self.serial_fsm.start()
+                self.serial_fsm.set_state(FSMState.SYNC)
 
             else:
                 ErrorMsg = f"Failure to establish serial connection using\
@@ -156,6 +159,7 @@ class CommGUI():
         self.btn_refresh["state"] = "active"
         self.drop_bd["state"] = "active"
         self.drop_com["state"] = "active"
+        self.serial_fsm.set_state(FSMState.IDLE)
 
 
     def publish(self):
