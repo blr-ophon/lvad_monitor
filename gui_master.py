@@ -131,9 +131,9 @@ class CommGUI():
                 self.btn_refresh["state"] = "disable"
                 self.drop_bd["state"] = "disable"
                 self.drop_com["state"] = "disable"
-                InfoMsg = f"port {self.serialCtrl.ser.port} \
-                            successfully opened"
-                messagebox.showinfo("showinfo", InfoMsg)
+                # InfoMsg = f"port {self.serialCtrl.ser.port} \
+                #             successfully opened"
+                # messagebox.showinfo("showinfo", InfoMsg)
 
                 # Create connection manager and start serial fsm thread
                 self.conn = ConnGUI(self.root)
@@ -159,7 +159,7 @@ class CommGUI():
         self.btn_refresh["state"] = "active"
         self.drop_bd["state"] = "active"
         self.drop_com["state"] = "active"
-        self.serial_fsm.set_state(FSMState.IDLE)
+        self.serial_fsm.stop()
 
 
     def publish(self):

@@ -12,7 +12,7 @@ which handle all GUI related routines
 import time
 import threading
 from enum import Enum
-from msg_parser import MsgParser
+from msg_parser import MsgParser, MsgCommand
 
 
 class FSMState(Enum):
@@ -31,6 +31,7 @@ class SerialFSM():
         self.serialCtrl = serialCtrl
         self.parser = MsgParser()
 
+        self.running = False
         self.thread = None
         self.condition = threading.Condition()
 
@@ -38,6 +39,7 @@ class SerialFSM():
         """
         Start finite state machine
         """
+        self.running = True
         self.thread = threading.Thread(target=self.run)
         self.thread.start()
 
@@ -45,7 +47,9 @@ class SerialFSM():
         """
         Stop finite state machine
         """
-        # TODO: stop thread
+        self.running = False
+        self.set_state(FSMState.IDLE)
+        self.thread.join()
 
     def notify(self):
         """
@@ -67,7 +71,7 @@ class SerialFSM():
         """
         FSM loop
         """
-        while True:
+        while self.running:
             with self.condition:
 
                 if self.state == FSMState.IDLE:
@@ -76,6 +80,7 @@ class SerialFSM():
                     self.condition.wait()
 
                 elif self.state == FSMState.SYNC:
+                    print("(FSM) SYNC, waiting for state change")
                     # 1 - Send sync packet
                     self.serialCtrl.send("#?#$")
                     # 2 - Poll for response
@@ -83,17 +88,20 @@ class SerialFSM():
                     if response is None:
                         pass
                     else:
-                        print(response)
-                    # 3 - Validate response
-                    #       Switch to connected
-                    #       or return to IDLE
-                    # 4 - Update GUI
-                    print("(FSM) SYNC, waiting for state change")
-                    self.condition.wait()
+                        # 3 - Validate response
+                        parsed_msg = self.parser.parse(response)
+                        if parsed_msg.command == MsgCommand.SYNC_RESP:
+                            # Switch to connected
+                            self.set_state(FSMState.CONNECTED)
+                            #  Update GUI
+                        else:
+                            # Return to IDLE
+                            pass
 
                 elif self.state == FSMState.CONNECTED:
                     # 1 - Update connGUI
                     # 2 - Do nothing. Wait for user prompt on GUI
+                    print("(FSM) CONNECTED, waiting for state change")
                     self.condition.wait()
                     # 3 - Send message to MCU
                     # 4 - Switch state to listening
