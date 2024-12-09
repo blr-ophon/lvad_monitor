@@ -11,6 +11,9 @@ class SerialCtrl():
         self.ser = None         # serial.Serial
         self.status = False     # Indicates successful port opening
 
+        # To prevent gui from closing port while it is in operation
+        self.using_port = False
+
     def getCOMList(self):
         """
         Update list of available ports
@@ -56,31 +59,19 @@ class SerialCtrl():
             self.status = False
             print(f"Error closing port: {e}")
 
-    def SerialSync(self, gui):
-        """
-        Synchronize with microcontroller
-        """
-        # Send initial messages to establish connection and
-        # update attributes based on received info (number of channels)
-        self.threading = True
-        while self.threading:
-            try:
-                self.ser.write(gui.dataCtrl.sync.encode())
-                gui.conn.lbl_sync_status["text"] = "..Sync.."
-                gui.conn.lbl_sync_status["fg"] = "orange"
-                gui.dataCtrl.RowMsg = self.ser.readline()
-            except:
-                pass
-
     def listen(self):
         """
         Poll for messages
         """
+        self.using_port = True
         msg = self.ser.read_until(b"$")
+        self.using_port = False
         return msg
 
     def send(self, msg):
+        self.using_port = True
         self.ser.write(msg.encode("utf-8"))
+        self.using_port = False
 
     def parseMsg(self):
         #

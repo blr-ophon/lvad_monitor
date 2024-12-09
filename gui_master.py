@@ -136,7 +136,7 @@ class CommGUI():
                 # messagebox.showinfo("showinfo", InfoMsg)
 
                 # Create connection manager and start serial fsm thread
-                self.conn = ConnGUI(self.root)
+                self.conn = ConnGUI(self.root, self.serial_fsm)
 
                 self.serial_fsm.start()
                 self.serial_fsm.set_state(FSMState.SYNC)
@@ -146,20 +146,20 @@ class CommGUI():
                             {self.clicked_com.get()}"
                 messagebox.showerror("showerror", ErrorMsg)
         else:
-            # self.serial_fsm.stop()
             self.serial_disconnect()
 
     def serial_disconnect(self):
         """
         Close the connection 
         """
-        self.conn.ConnGUIClose()
-        self.serialCtrl.SerialClose()
+        self.serial_fsm.stop()          # Close fsm
+        self.serialCtrl.SerialClose()   # Close port
+        self.conn.ConnGUIClose()        # Close menu
+
         self.btn_connect["text"] = "Connect"
         self.btn_refresh["state"] = "active"
         self.drop_bd["state"] = "active"
         self.drop_com["state"] = "active"
-        self.serial_fsm.stop()
 
 
     def publish(self):
@@ -180,8 +180,9 @@ class ConnGUI():
     """
     Connection manager menu
     """
-    def __init__(self, root):
+    def __init__(self, root, serial_fsm):
         self.root = root
+        self.serial_fsm = serial_fsm
 
         self.padx = 20
         self.pady = 15
@@ -307,8 +308,27 @@ class ConnGUI():
         self.frame.destroy()
         self.root.geometry("360x120")
 
+    def connect_successful(self, channels_n):
+        self.lbl_sync_status["text"] = "OK"
+        self.lbl_sync_status["fg"] = "green"
+
+        self.lbl_ch_status["text"] = str(channels_n)
+        self.lbl_ch_status["fg"] = "green"
+
+        self.btn_start_stream["state"] = "active"
+        self.btn_stop_stream["state"] = "active"
+        if channels_n > 0:
+            self.btn_add_chart["state"] = "active"
+            self.btn_kill_chart["state"] = "active"
+            self.chkbtn_save["state"] = "active"
+
     def start_stream(self):
-        pass
+        """
+        Request data from MCU according to user specification
+        and plot them in the specified charts
+        """
+        # TODO: get input from button
+        self.serial_fsm.request_data(1)
 
     def stop_stream(self):
         pass
