@@ -37,6 +37,7 @@ extern "C" {
 #include <stdlib.h>
 #include "retarget.h"
 #include "adc_data.h"
+#include "MSFP_api.h"
 
 /* USER CODE END Includes */
 

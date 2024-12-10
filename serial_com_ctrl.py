@@ -11,9 +11,6 @@ class SerialCtrl():
         self.ser = None         # serial.Serial
         self.status = False     # Indicates successful port opening
 
-        # To prevent gui from closing port while it is in operation
-        self.using_port = False
-
     def getCOMList(self):
         """
         Update list of available ports
@@ -42,7 +39,7 @@ class SerialCtrl():
                     timeout=0.1,
             )
             self.status = True
-            print(f"Opened port: {self.ser.port}")
+            print(f"Opened port: {self.ser.port} (baud: {self.ser.baudrate})")
         except Exception as e:
             # Failed opening port
             self.status = False
@@ -63,19 +60,11 @@ class SerialCtrl():
         """
         Poll for messages
         """
-        self.using_port = True
         msg = self.ser.read_until(b"$")
-        self.using_port = False
-        return msg
+        return msg if msg else None
 
     def send(self, msg):
-        self.using_port = True
         self.ser.write(msg.encode("utf-8"))
-        self.using_port = False
-
-    def parseMsg(self):
-        #
-        pass
 
     @staticmethod
     def isValidPort(port):

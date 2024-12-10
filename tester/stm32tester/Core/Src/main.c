@@ -46,6 +46,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 /* USER CODE BEGIN PV */
 
 extern uint8_t recvBuf[100];
+extern uint8_t msfp_recvBuf[100];
 int data_streams_n = 2;
 int ADC_send = RESET;
 
@@ -83,6 +84,10 @@ int main(void)
 
     /* USER CODE BEGIN Init */
 
+    MSFP_Init();
+    // TODO: Add channels
+    
+
     /* USER CODE END Init */
 
     /* Configure the system clock */
@@ -101,7 +106,7 @@ int main(void)
     RetargetInit(&huart2);
 
 
-    HAL_UART_Receive_IT(&huart2, recvBuf, 1);
+    HAL_UART_Receive_IT(&huart2, msfp_recvBuf, 1);
     ADCdata_test_generate();
 
     /* USER CODE END 2 */
@@ -114,7 +119,6 @@ int main(void)
         while(ADC_send){
             ADCdata_test_send();
         }
-
         /* USER CODE BEGIN 3 */
     }
     /* USER CODE END 3 */

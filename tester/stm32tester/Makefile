@@ -60,7 +60,11 @@ Core/Src/syscalls.c \
 Core/Src/retarget.c \
 Core/Src/fgen.c \
 Core/Src/adc_data.c \
-Core/Src/msg.c
+Core/Src/msg.c \
+Core/Src/MSFP_api.c \
+Core/Src/MSFP_fsm.c \
+Core/Src/MSFP_parser.c \
+Core/Src/MSP_channels.c \
 
 # ASM sources
 ASM_SOURCES =  \

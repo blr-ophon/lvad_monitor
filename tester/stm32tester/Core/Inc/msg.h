@@ -5,6 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void processMsg(uint8_t *msg);
+void processMsg(UART_HandleTypeDef *huart, uint8_t *msg);
 
 #endif

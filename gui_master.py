@@ -122,7 +122,6 @@ class CommGUI():
             # Try connecting
             PORT = self.clicked_com.get()
             BAUD = self.clicked_bd.get()
-            print(f"{PORT} (baud: {BAUD})")
             self.serialCtrl.SerialOpen(port=PORT, baudrate=BAUD)
 
             if self.serialCtrl.status:
@@ -184,6 +183,8 @@ class ConnGUI():
         self.root = root
         self.serial_fsm = serial_fsm
 
+        self.active_channels = None
+
         self.padx = 20
         self.pady = 15
 
@@ -210,7 +211,7 @@ class ConnGUI():
                 text="...Sync...",
                 bg="white",
                 fg="orange",
-                width=5,
+                width=10,
         )
         self.lbl_ch = tk.Label(
                 master=self.frame,
@@ -308,11 +309,13 @@ class ConnGUI():
         self.frame.destroy()
         self.root.geometry("360x120")
 
-    def connect_successful(self, channels_n):
+    def status_connected(self, channels_n):
+        self.active_channels = channels_n
+
         self.lbl_sync_status["text"] = "OK"
         self.lbl_sync_status["fg"] = "green"
 
-        self.lbl_ch_status["text"] = str(channels_n)
+        self.lbl_ch_status["text"] = str(self.active_channels)
         self.lbl_ch_status["fg"] = "green"
 
         self.btn_start_stream["state"] = "active"
@@ -321,6 +324,32 @@ class ConnGUI():
             self.btn_add_chart["state"] = "active"
             self.btn_kill_chart["state"] = "active"
             self.chkbtn_save["state"] = "active"
+
+    def status_syncing(self):
+        self.lbl_sync_status["text"] = "Syncing..."
+        self.lbl_sync_status["fg"] = "orange"
+
+        self.lbl_ch_status["text"] = "..."
+        self.lbl_ch_status["fg"] = "orange"
+
+        self.btn_start_stream["state"] = "disabled"
+        self.btn_stop_stream["state"] = "disabled"
+        self.btn_add_chart["state"] = "disabled"
+        self.btn_kill_chart["state"] = "disabled"
+        self.chkbtn_save["state"] = "disabled"
+
+    def status_failed(self):
+        self.lbl_sync_status["text"] = "Failed"
+        self.lbl_sync_status["fg"] = "red"
+
+        self.lbl_ch_status["text"] = "..."
+        self.lbl_ch_status["fg"] = "red"
+
+        self.btn_start_stream["state"] = "disabled"
+        self.btn_stop_stream["state"] = "disabled"
+        self.btn_add_chart["state"] = "disabled"
+        self.btn_kill_chart["state"] = "disabled"
+        self.chkbtn_save["state"] = "disabled"
 
     def start_stream(self):
         """
@@ -331,6 +360,7 @@ class ConnGUI():
         self.serial_fsm.request_data(1)
 
     def stop_stream(self):
+        self.serial_fsm.stop_request()
         pass
 
     def add_chart(self):

@@ -7,6 +7,7 @@ uint8_t recvBufIndex = 0;
 extern int data_streams_n;
 extern int ADC_send;
 
+/*
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     // Previous message was not processed or Buffer is full
     if(recvBufIndex >= RECV_BUFFER_SIZE -1) {
@@ -23,15 +24,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
     if((char) byteReceived == '$') {
         __HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
-        processMsg(recvBuf);
+        processMsg(huart, recvBuf);
         __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
         recvBufIndex = 0;
     }
 out:
     HAL_UART_Receive_IT(huart, &recvBuf[recvBufIndex], 1);
 }
+*/
 
-void processMsg(uint8_t *msg) {
+void processMsg(UART_HandleTypeDef *huart, uint8_t *msg) {
     // TODO
     char *msg_str = (char*) msg;
     char *pMsgStart = strchr(msg_str, '#');
@@ -54,7 +56,11 @@ void processMsg(uint8_t *msg) {
         break;
     case 'S':
         // Stop sending
-        printf("Stop\r\n");
+        
+        //Wait for current msg on buffer to be sent, then send STOP confirmation
+        while (HAL_UART_GetState(huart) != HAL_UART_STATE_READY) {}
+        printf("#S#$");
+
         ADC_send = RESET;
         break;
     default:
