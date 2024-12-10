@@ -20,6 +20,10 @@ int MSFP_ParseMsg(uint8_t *msg, int size, MSFP_Packet *packet){
             // SYNC
             packet->type = PKTTYPE_SYNC;
             break;
+        case 'C':
+            // ACK
+            packet->type = PKTTYPE_ACK;
+            break;
         case 'A':
             // REQ
             packet->type = PKTTYPE_REQ;

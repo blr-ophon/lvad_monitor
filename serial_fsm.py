@@ -109,8 +109,6 @@ class SerialFSM():
                     # Poll for response
                     response = self.serialCtrl.listen()
                     time.sleep(0.5)
-                    print(response)
-                    continue
 
                     # Always check if fsm has not been stopped during blocking
                     # operation after it is done
@@ -119,10 +117,18 @@ class SerialFSM():
 
                     # Parse and validate response
                     if response is not None:
+                        print(response)
                         self.received_packet = MsgParse(response)
+                        if self.received_packet is None:
+                            continue
+
                         if self.received_packet.command == MsgCommand.SYNC_RESP:
+                            # Send Acknowledge
+                            self.serialCtrl.send("#C#$");
+
                             # Switch to connected
                             self.set_state(FSMState.CONNECTED)
+
 
                             #  Update GUI
                             self.gui.conn.status_connected(self.received_packet.channels_n)
@@ -158,6 +164,7 @@ class SerialFSM():
                     if response is not None:
                         print(response)
                         self.received_packet = MsgParse(response)
+
                         if self.received_packet.command == MsgCommand.STOP:
                             # Switch back to connected
                             print("STOP received")

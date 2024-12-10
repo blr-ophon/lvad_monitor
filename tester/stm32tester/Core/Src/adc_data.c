@@ -45,6 +45,7 @@ void ADCdata_test_send(void) {
         snprintf(d2_str, 19, "%f", wav2_samples[i]);
         printf("#D#%s#%s#%d#$", d1_str, d2_str, strlen(d1_str) + strlen(d2_str) );
     }
+    MSFP_HaltNotify();
 }
 
 

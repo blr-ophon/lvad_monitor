@@ -9,6 +9,7 @@
 typedef enum{
     PKTTYPE_SYNC,
     PKTTYPE_SYNC_RESP,
+    PKTTYPE_ACK,
     PKTTYPE_REQ,
     PKTTYPE_REQ_RESP,
     PKTTYPE_STOP,

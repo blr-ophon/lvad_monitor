@@ -6,6 +6,7 @@ uint8_t msfp_recvBuf[RECV_BUFFER_SIZE] = {0};
 uint8_t msfp_recvBufIndex = 0;
 
 uint8_t FSM_State = STATE_IDLE;
+bool waiting_halt_notification = false;
 
 MSFP_Packet last_packet;
 
@@ -71,26 +72,53 @@ int MSFP_fsm_update(UART_HandleTypeDef *huart){
             // Waiting for SYNC packet
             if(last_packet.type == PKTTYPE_SYNC){
                 // Respond SYNC packet
-                // char *msg = "(MCU) SYNC RECEIVED\r\n";
-                // HAL_UART_Transmit_IT(huart, (uint8_t*)msg, strlen(msg));
-                printf("(MCU) SYNC RECEIVED (i:%d)\r\n", msfp_recvBufIndex);
-
-                // FSM_State = STATE_SYNC;
+                //char *msg = "(MCU) SYNC RECEIVED\r\n";
+                char *msg = "#!#2#$";
+                HAL_UART_Transmit_IT(huart, (uint8_t*)msg, strlen(msg));
+                // printf("(MCU) SYNC RECEIVED (i:%d)\r\n", msfp_recvBufIndex);
+                FSM_State = STATE_SYNC;
             }
             break;
 
         case STATE_SYNC:
             // Waiting for Acknowledge
-            break;
-        case STATE_CONN:
-            // Waiting for transfer instructions
-            // Respond to keep alive
+            if(last_packet.type == PKTTYPE_ACK){
+                //char *msg = "(MCU) ACK received";
+                //HAL_UART_Transmit_IT(huart, (uint8_t*)msg, strlen(msg));
+                FSM_State = STATE_CONN;
+            }
             // Set peripherals
             break;
+
+        case STATE_CONN:
+            // Waiting for transfer instructions
+            if(last_packet.type == PKTTYPE_REQ){
+                FSM_State = STATE_TRANS;
+                ADC_send = SET;
+            }
+            // Respond to keep alive
+            break;
+
         case STATE_TRANS:
             // Allow data until stop is called
+
+            if(waiting_halt_notification){
+                // Wait for MCU to stop it's tasks
+                char *msg = "#S#$";
+                HAL_UART_Transmit(huart, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+                FSM_State = STATE_CONN;
+                waiting_halt_notification = false;
+            }
+
+            else if(last_packet.type == PKTTYPE_STOP){
+                //Respond stop
+                // Signal to datasend task to stop
+                ADC_send = RESET;
+                waiting_halt_notification = true;
+            }
             break;
     }
+    memset(&last_packet, 0, sizeof(MSFP_Packet));
 
 out:
     return rv;

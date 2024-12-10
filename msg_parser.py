@@ -23,6 +23,7 @@ def MsgParse(raw_msg):
     msg_tokens = tokenize_msg(raw_msg)
     if not msg_tokens:
         print(f"Invalid Message: {raw_msg}")
+        return None
     parsed_msg = parsedMsg(None, None)
 
     match msg_tokens[0]:
