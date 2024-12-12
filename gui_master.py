@@ -386,6 +386,7 @@ class DisplayGUI():
         """
         Append new chart to the screen
         """
+        self.totalframes+=1
         # Create chart frame
         self.chart_addMasterFrame()
         # Normal widgets
@@ -395,23 +396,26 @@ class DisplayGUI():
 
         self.adjustRootFrame()
 
+
     def chart_addMasterFrame(self):
         """
         Frame where all charts will be
         """
+
         frame = tk.LabelFrame(
             master=self.root,
             text=f"Display Manager - {len(self.frames)+1}",
             padx=5, pady=5, bg="white"
         )
         self.frames.append(frame)
-        self.totalframes = len(self.frames)-1
+        frame_index = self.totalframes-1
+        # tmp_totalframes = len(self.frames)-1
 
-        if self.totalframes % 2 == 0:
+        if frame_index % 2 == 0:
             self.framesCol = 0
         else:
             self.framesCol = 9
-        self.framesRow = 4 + (4 * int(self.totalframes/2))
+        self.framesRow = 4 + (4 * int(frame_index/2))
 
         frame.grid(
             padx=5,
@@ -423,29 +427,33 @@ class DisplayGUI():
 
     def chart_addGraph(self):
         # Create figures
-        fig0 = pplt.Figure(figsize=(7, 5), dpi=80)
+        frame_index = self.totalframes-1
 
-        fig1 = fig0.add_subplot(111)
+        fig = pplt.Figure(figsize=(7, 5), dpi=80)
 
-        fig2 = FigureCanvasTkAgg(fig0,
-                                 master=self.frames[self.totalframes])
+        plot1 = fig.add_subplot(111)
 
-        fig2.get_tk_widget().grid(column=1, row=0, columnspan=17, sticky="N")
+        canvas = FigureCanvasTkAgg(fig,
+                                 master=self.frames[frame_index])
+
+        canvas.get_tk_widget().grid(column=1, row=0, columnspan=17, sticky="N")
 
         # Append figures to list and append list
         figure_list = []
-        figure_list.append(fig0)
-        figure_list.append(fig1)
-        figure_list.append(fig2)
+        figure_list.append(fig)
+        figure_list.append(plot1)
+        figure_list.append(canvas)
         self.figures.append(figure_list)
 
     def chart_addBtnFrame(self):
         btnH = 2
         btnW = 4
 
+        frame_index = self.totalframes-1
+
         # Create frame and widgets
         frame = tk.LabelFrame(
-            master=self.frames[self.totalframes],
+            master=self.frames[frame_index],
             pady=5,
             bg="white",
         )
@@ -479,26 +487,30 @@ class DisplayGUI():
         """
         Remove last chart from screen
         """
-        totalFrames = len(self.frames)
-        if totalFrames > 0:
-            self.frames[totalFrames-1].destroy()
-            self.frames.pop()
-            self.figures.pop()
+        if self.totalframes > 0:
+            self.totalframes -= 1
+
+            chart_frame = self.frames.pop()
+            for widget in chart_frame.winfo_children():
+                widget.destroy()
+            chart_frame.destroy()
+
             self.controlFrames.pop()
+            self.figures.pop()
+
             self.adjustRootFrame()
 
     def adjustRootFrame(self):
         """
         Resize window to accomodate chart frames
         """
-        self.totalframes = len(self.frames)-1
         rootWidth = 905
-        rootHeight = 130 + 430 * (int(self.totalframes/2)+1)
+        rootHeight = 130 + 430 * (int((self.totalframes-1)/2)+1)
 
-        if self.totalframes > 0:
+        if self.totalframes > 1:
             rootWidth = 905*2
 
-        if self.totalframes+1 == 0:
+        if self.totalframes == 0:
             rootHeight = 130
 
         self.root.geometry(f"{rootWidth}x{rootHeight}")
