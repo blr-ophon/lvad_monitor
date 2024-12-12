@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import matplotlib.pyplot as pplt
-from matplotlib.backends.backend_tkagg import FigureCanvasAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from serial_fsm import SerialFSM, FSMState
 
@@ -140,7 +140,7 @@ class CommGUI():
 
     def serial_disconnect(self):
         """
-        Close the connection 
+        Close the connection
         """
         self.serial_fsm.stop()          # Close fsm
         self.serialCtrl.SerialClose()   # Close port
@@ -150,7 +150,6 @@ class CommGUI():
         self.btn_refresh["state"] = "active"
         self.drop_bd["state"] = "active"
         self.drop_com["state"] = "active"
-
 
     def publish(self):
         """Publish widgets grid on Communication frame"""
@@ -356,14 +355,12 @@ class ConnGUI():
 
     def stop_stream(self):
         self.serial_fsm.stop_request()
-        pass
 
     def add_chart(self):
-        self.dis.addMasterChannel()
-        pass
+        self.dis.newChart()
 
     def kill_chart(self):
-        pass
+        self.dis.killChart()
 
     def save_data(self):
         pass
@@ -380,37 +377,115 @@ class DisplayGUI():
         self.framesRow = 4
         self.totalframes = 0
 
+        # list of lists of figures for each chart
         self.figures = []
+        # list of lists of control frames for each chart
+        self.controlFrames = []
 
-    def addMasterChannel(self):
-        self.addMasterFrame()
+    def newChart(self):
+        """
+        Append new chart to the screen
+        """
+        # Create chart frame
+        self.chart_addMasterFrame()
+        # Normal widgets
+        self.chart_addBtnFrame()
+        # Create graph
+        self.chart_addGraph()
+
         self.adjustRootFrame()
 
-    def addMasterFrame(self):
+    def chart_addMasterFrame(self):
         """
         Frame where all charts will be
         """
-        master_frame = tk.LabelFrame(
+        frame = tk.LabelFrame(
             master=self.root,
             text=f"Display Manager - {len(self.frames)+1}",
             padx=5, pady=5, bg="white"
         )
-        self.frames.append(master_frame)
+        self.frames.append(frame)
         self.totalframes = len(self.frames)-1
 
         if self.totalframes % 2 == 0:
             self.framesCol = 0
         else:
             self.framesCol = 9
-
         self.framesRow = 4 + (4 * int(self.totalframes/2))
-        self.frames[self.totalframes].grid(
+
+        frame.grid(
             padx=5,
             column=self.framesCol,
             row=self.framesRow,
             columnspan=9,
             sticky="NW"
         )
+
+    def chart_addGraph(self):
+        # Create figures
+        fig0 = pplt.Figure(figsize=(7, 5), dpi=80)
+
+        fig1 = fig0.add_subplot(111)
+
+        fig2 = FigureCanvasTkAgg(fig0,
+                                 master=self.frames[self.totalframes])
+
+        fig2.get_tk_widget().grid(column=1, row=0, columnspan=17, sticky="N")
+
+        # Append figures to list and append list
+        figure_list = []
+        figure_list.append(fig0)
+        figure_list.append(fig1)
+        figure_list.append(fig2)
+        self.figures.append(figure_list)
+
+    def chart_addBtnFrame(self):
+        btnH = 2
+        btnW = 4
+
+        # Create frame and widgets
+        frame = tk.LabelFrame(
+            master=self.frames[self.totalframes],
+            pady=5,
+            bg="white",
+        )
+
+        btn_addCh = tk.Button(
+            master=frame,
+            text="+", bg="white",
+            width=btnW, height=btnH
+        )
+
+        btn_delCh = tk.Button(
+            master=frame,
+            text="-", bg="white",
+            width=btnW, height=btnH
+        )
+        btn_addCh.grid(column=0, row=0, padx=5, pady=5)
+
+        # Publish frame and widgets
+        frame.grid(column=0, row=0, padx=5, pady=5, sticky="N")
+        btn_addCh.grid(column=0, row=0, padx=5, pady=5, sticky="NW")
+        btn_delCh.grid(column=1, row=0, padx=5, pady=5, sticky="NW")
+
+        # Append frame and widgets to list and append list
+        frame_list = []
+        frame_list.append(frame)
+        frame_list.append(btn_addCh)
+        frame_list.append(btn_delCh)
+        self.controlFrames.append(frame_list)
+
+    def killChart(self):
+        """
+        Remove last chart from screen
+        """
+        totalFrames = len(self.frames)
+        if totalFrames > 0:
+            self.frames[totalFrames-1].destroy()
+            self.frames.pop()
+            self.figures.pop()
+            self.controlFrames.pop()
+            self.adjustRootFrame()
 
     def adjustRootFrame(self):
         """
@@ -427,17 +502,7 @@ class DisplayGUI():
             rootHeight = 130
 
         self.root.geometry(f"{rootWidth}x{rootHeight}")
-
-    def addGraph(self):
-        self.figures.append([])
-        self.figures[self.totalframes].append(pplt.Figure(figsize=(7,5), dpi=80))
-        self.figures[self.totalframes].append(self.figures[self.totalframes][0].add_subplot(111))
-
-        figCanvas = FigureCanvasAgg(self.figures[self.totalframes][0],
-                                    master=self.frames[self.totalframes])
-        self.figures[self.totalframes].append(figCanvas)
-
-        self.figures[self.totalframes][2].get_tk_widget().grid(column=1)
+        print(f"{rootWidth}x{rootHeight}")
 
 
 
