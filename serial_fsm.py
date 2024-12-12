@@ -128,7 +128,7 @@ class SerialFSM():
                         self.dataCtrl.newChannel(ch_id=2, sample_rate=100)
 
                         # Send Acknowledge
-                        self.serialCtrl.send("#C#$");
+                        self.serialCtrl.send("#C#$")
                         response = self.serialCtrl.listen()
                         print(response)
 
@@ -136,7 +136,7 @@ class SerialFSM():
                         self.set_state(FSMState.CONNECTED)
 
                         #  Update GUI
-                        self.gui.conn.status_connected(self.received_packet.channels_n)
+                        self.gui.gui_conn.status_connected(self.received_packet.channels_n)
 
                     else:
                         # TODO: improper, this does not handle the MCU not sending anything
@@ -151,7 +151,7 @@ class SerialFSM():
                             # Return to IDLE
                             self.set_state(FSMState.IDLE)
                             #  Update GUI
-                            self.gui.conn.status_failed()
+                            self.gui.gui_conn.status_failed()
 
                 elif self.state == FSMState.CONNECTED:
                     self.print_fsm_state(self.state)
@@ -176,11 +176,10 @@ class SerialFSM():
                         # Switch back to connected
                         self.set_state(FSMState.CONNECTED)
 
-                    elif self.received_packet.command == MsgCommand.REQ_RESP:
+                    elif self.received_packet.command == MsgCommand.DATA:
                         # print(f"{self.received_packet.channel1_data}   {self.received_packet.channel2_data}")
-                        self.dataCtrl.appendData(ch_id=1, data=self.received_packet.channel1_data)
-                        self.dataCtrl.appendData(ch_id=2, data=self.received_packet.channel2_data)
-                        # append data do dataCtrl
+                        enum_data = enumerate(self.received_packet.channels_data)
+                        self.dataCtrl.appendData(enum_data)
 
     @staticmethod
     def print_fsm_state(state):
@@ -198,7 +197,7 @@ class SerialFSM():
         print(f"\033[{color}m[{state}]\033[0m")
 
 if __name__ == "__main__":
-    fsm = SerialFSM(None, None)
+    fsm = SerialFSM(None, None, None)
     fsm.start()
 
     while True:

@@ -8,15 +8,14 @@ class MsgCommand(Enum):
     SYNC = 1            # ?
     SYNC_RESP = 2       # !
     REQ = 3             # A
-    REQ_RESP = 4        # D
+    DATA = 4            # D
     STOP = 5            # S
 
 @dataclass
 class parsedMsg:
     command: int
-    channels_n: int
-    channel1_data: float
-    channel2_data: float
+    channels_n: int             # SYNC_RESP
+    channels_data: list[float]
 
 
 def MsgParse(raw_msg):
@@ -27,7 +26,7 @@ def MsgParse(raw_msg):
     if not msg_tokens:
         print(f"Invalid Message: {raw_msg}")
         return None
-    parsed_msg = parsedMsg(None, None, None, None)
+    parsed_msg = parsedMsg(None, None, [])
 
     match msg_tokens[0]:
         case "?":
@@ -45,9 +44,9 @@ def MsgParse(raw_msg):
             print("Unexpected msg (REQ)")
 
         case "D":
-            parsed_msg.command = MsgCommand.REQ_RESP
-            parsed_msg.channel1_data = msg_tokens[1]
-            parsed_msg.channel2_data = msg_tokens[2]
+            parsed_msg.command = MsgCommand.DATA
+            parsed_msg.channels_data.append(msg_tokens[1])
+            parsed_msg.channels_data.append(msg_tokens[2])
 
         case "S":
             parsed_msg.command = MsgCommand.STOP

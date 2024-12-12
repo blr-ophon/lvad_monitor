@@ -1,20 +1,18 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
-import matplotlib.pyplot as pplt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
 from serial_fsm import SerialFSM, FSMState
+from gui_charts import ChartsGUI
 
 # TODO: geometry variables in separated file
 
 class RootGUI():
+    # TODO: Function rather than a class
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("LVAD Monitor")
         self.root.geometry("385x130")
         self.root.config(bg="white")
-
 
 class CommGUI():
     # TODO: Organize this class. Put all attributes in __init__. Rename some functions
@@ -23,7 +21,7 @@ class CommGUI():
         self.root = root
         self.serialCtrl = serialCtrl
         self.dataCtrl = dataCtrl
-        self.conn = None
+        self.gui_conn = None
         self.serial_fsm = SerialFSM(serialCtrl, dataCtrl, self)
 
         # FRAME
@@ -126,7 +124,7 @@ class CommGUI():
                 # messagebox.showinfo("showinfo", InfoMsg)
 
                 # Create connection manager and start serial fsm thread
-                self.conn = ConnGUI(self.root, self.serial_fsm, self.dataCtrl)
+                self.gui_conn = ConnGUI(self.root, self.serial_fsm, self.dataCtrl)
 
                 self.serial_fsm.start()
                 self.serial_fsm.set_state(FSMState.SYNC)
@@ -144,7 +142,7 @@ class CommGUI():
         """
         self.serial_fsm.stop()          # Close fsm
         self.serialCtrl.SerialClose()   # Close port
-        self.conn.ConnGUIClose()        # Close menu
+        self.gui_conn.ConnGUIClose()        # Close menu
 
         self.btn_connect["text"] = "Connect"
         self.btn_refresh["state"] = "active"
@@ -266,7 +264,7 @@ class ConnGUI():
 
         # Publish
         self.ConnGUIOpen()
-        self.dis = DisplayGUI(self.root, self.dataCtrl)
+        self.gui_charts = ChartsGUI(self.root, self.dataCtrl)
 
     def ConnGUIOpen(self):
         """
@@ -357,165 +355,13 @@ class ConnGUI():
         self.serial_fsm.stop_request()
 
     def add_chart(self):
-        self.dis.newChart()
+        self.gui_charts.newChart()
 
     def kill_chart(self):
-        self.dis.killChart()
+        self.gui_charts.killChart()
 
     def save_data(self):
         pass
-
-
-
-class DisplayGUI():
-    def __init__(self, root, dataCtrl):
-        self.root = root
-        self.dataCtrl = dataCtrl
-
-        self.frames = []
-        self.framesCol = 0
-        self.framesRow = 4
-        self.totalframes = 0
-
-        # list of lists of figures for each chart
-        self.figures = []
-        # list of lists of control frames for each chart
-        self.controlFrames = []
-
-    def newChart(self):
-        """
-        Append new chart to the screen
-        """
-        self.totalframes+=1
-        # Create chart frame
-        self.chart_addMasterFrame()
-        # Normal widgets
-        self.chart_addBtnFrame()
-        # Create graph
-        self.chart_addGraph()
-
-        self.adjustRootFrame()
-
-
-    def chart_addMasterFrame(self):
-        """
-        Frame where all charts will be
-        """
-
-        frame = tk.LabelFrame(
-            master=self.root,
-            text=f"Display Manager - {len(self.frames)+1}",
-            padx=5, pady=5, bg="white"
-        )
-        self.frames.append(frame)
-        frame_index = self.totalframes-1
-        # tmp_totalframes = len(self.frames)-1
-
-        if frame_index % 2 == 0:
-            self.framesCol = 0
-        else:
-            self.framesCol = 9
-        self.framesRow = 4 + (4 * int(frame_index/2))
-
-        frame.grid(
-            padx=5,
-            column=self.framesCol,
-            row=self.framesRow,
-            columnspan=9,
-            sticky="NW"
-        )
-
-    def chart_addGraph(self):
-        # Create figures
-        frame_index = self.totalframes-1
-
-        fig = pplt.Figure(figsize=(7, 5), dpi=80)
-
-        plot1 = fig.add_subplot(111)
-
-        canvas = FigureCanvasTkAgg(fig,
-                                 master=self.frames[frame_index])
-
-        canvas.get_tk_widget().grid(column=1, row=0, columnspan=17, sticky="N")
-
-        # Append figures to list and append list
-        figure_list = []
-        figure_list.append(fig)
-        figure_list.append(plot1)
-        figure_list.append(canvas)
-        self.figures.append(figure_list)
-
-    def chart_addBtnFrame(self):
-        btnH = 2
-        btnW = 4
-
-        frame_index = self.totalframes-1
-
-        # Create frame and widgets
-        frame = tk.LabelFrame(
-            master=self.frames[frame_index],
-            pady=5,
-            bg="white",
-        )
-
-        btn_addCh = tk.Button(
-            master=frame,
-            text="+", bg="white",
-            width=btnW, height=btnH
-        )
-
-        btn_delCh = tk.Button(
-            master=frame,
-            text="-", bg="white",
-            width=btnW, height=btnH
-        )
-        btn_addCh.grid(column=0, row=0, padx=5, pady=5)
-
-        # Publish frame and widgets
-        frame.grid(column=0, row=0, padx=5, pady=5, sticky="N")
-        btn_addCh.grid(column=0, row=0, padx=5, pady=5, sticky="NW")
-        btn_delCh.grid(column=1, row=0, padx=5, pady=5, sticky="NW")
-
-        # Append frame and widgets to list and append list
-        frame_list = []
-        frame_list.append(frame)
-        frame_list.append(btn_addCh)
-        frame_list.append(btn_delCh)
-        self.controlFrames.append(frame_list)
-
-    def killChart(self):
-        """
-        Remove last chart from screen
-        """
-        if self.totalframes > 0:
-            self.totalframes -= 1
-
-            chart_frame = self.frames.pop()
-            for widget in chart_frame.winfo_children():
-                widget.destroy()
-            chart_frame.destroy()
-
-            self.controlFrames.pop()
-            self.figures.pop()
-
-            self.adjustRootFrame()
-
-    def adjustRootFrame(self):
-        """
-        Resize window to accomodate chart frames
-        """
-        rootWidth = 905
-        rootHeight = 130 + 430 * (int((self.totalframes-1)/2)+1)
-
-        if self.totalframes > 1:
-            rootWidth = 905*2
-
-        if self.totalframes == 0:
-            rootHeight = 130
-
-        self.root.geometry(f"{rootWidth}x{rootHeight}")
-        print(f"{rootWidth}x{rootHeight}")
-
 
 
 if __name__ == "__main__":
