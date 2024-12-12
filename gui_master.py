@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 from serial_fsm import SerialFSM, FSMState
-from gui_charts import ChartsGUI
+from gui_charts import ChartsManagerGUI
 
 # TODO: geometry variables in separated file
 
@@ -264,7 +264,7 @@ class ConnGUI():
 
         # Publish
         self.ConnGUIOpen()
-        self.gui_charts = ChartsGUI(self.root, self.dataCtrl)
+        self.gui_charts = ChartsManagerGUI(self.root, self.dataCtrl)
 
     def ConnGUIOpen(self):
         """
