@@ -7,6 +7,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 # plot1: pplt.Axes
 
 class ChartGUI():
+    """
+    Single chart with graph and manageable channels to plot
+    """
     def __init__(self, frame):
         self.frame = frame
         self.fig = None
@@ -14,8 +17,10 @@ class ChartGUI():
         self.plot1 = None
         # self.plot_list
         self.channels_list = []
+        self.checkbox_vars = []
 
         self.drawGraph()
+        self.drawChannelMenu()
 
     def drawGraph(self):
         """
@@ -29,9 +34,26 @@ class ChartGUI():
                                     columnspan=4, sticky="N")
 
     def drawChannelMenu(self):
-        pass
+        """
+        Draw channel menu with checkboxes
+        """
+        main_frame = tk.LabelFrame(master=self.frame, text="Available Channels", bg="white")
+        main_frame.grid(column=0, row=0, padx=5, pady=5, sticky="N")
+
+        for channel in range(6):
+            sub_frame = tk.Frame(master=main_frame)
+            sub_frame.grid(row=channel, column=0, pady=5, padx=5, sticky="w")
+
+            var = tk.IntVar()
+            self.checkbox_vars.append(var)
+
+            checkbox = tk.Checkbutton(sub_frame, text=f"aaaaaaaaaaaaaaaaaaaaaaaaaaChannel {channel}", variable=var)
+            checkbox.grid(row=0, column=0, padx=5)
 
     def destroy(self):
+        """
+        Remove chart with all it's widgets
+        """
         for widget in self.frame.winfo_children():
             widget.destroy()
         self.frame.destroy()
@@ -83,42 +105,6 @@ class ChartsManagerGUI():
         self.Charts.append(new_chart)
 
         self.adjustRootFrame()
-# 
-#     def chart_addBtnFrame(self):
-#         btnH = 2
-#         btnW = 4
-# 
-#         # Create frame and widgets
-#         frame = tk.LabelFrame(
-#             master=self.frames[-1],
-#             pady=5,
-#             bg="white",
-#         )
-# 
-#         btn_addCh = tk.Button(
-#             master=frame,
-#             text="+", bg="white",
-#             width=btnW, height=btnH,
-#         )
-# 
-#         btn_delCh = tk.Button(
-#             master=frame,
-#             text="-", bg="white",
-#             width=btnW, height=btnH
-#         )
-#         btn_addCh.grid(column=0, row=0, padx=5, pady=5)
-# 
-#         # Publish frame and widgets
-#         frame.grid(column=0, row=0, padx=5, pady=5, sticky="N")
-#         btn_addCh.grid(column=0, row=0, padx=5, pady=5, sticky="NW")
-#         btn_delCh.grid(column=1, row=0, padx=5, pady=5, sticky="NW")
-# 
-#         # Append frame and widgets to list and append list
-#         frame_list = []
-#         frame_list.append(frame)
-#         frame_list.append(btn_addCh)
-#         frame_list.append(btn_delCh)
-#         self.charts_frames.append(frame_list)
 
     def killChart(self):
         """
