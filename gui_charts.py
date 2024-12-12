@@ -2,6 +2,7 @@ import tkinter as tk
 import matplotlib.pyplot as pplt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from dataclasses import dataclass
+from functools import partial
 
 
 @dataclass
@@ -12,6 +13,10 @@ class ChartData():
     fig: pplt.Figure
     canvas: FigureCanvasTkAgg
     plot1: pplt.Axes
+"""
+    chart root frame
+    chart index
+"""
 
 
 class ChartsGUI():
@@ -29,6 +34,11 @@ class ChartsGUI():
         # list of lists of control frames for each chart
         self.charts_frames = []
 
+        self.ChannelMenu = []
+        self.ViewVar = []
+        self.OptionVar = []
+        self.FunVar = []
+
     def newChart(self):
         """
         Append new chart to the screen
@@ -36,6 +46,8 @@ class ChartsGUI():
         self.totalframes+=1
         # Create chart frame
         self.chart_addMasterFrame()
+        # Menus
+        self.chart_addChannelMenu()
         # Normal widgets
         self.chart_addBtnFrame()
         # Create graph
@@ -82,14 +94,9 @@ class ChartsGUI():
 
         chart_data = ChartData(fig, canvas, plot1)
 
-        canvas.get_tk_widget().grid(column=1, row=0, rowspan=17, 
+        canvas.get_tk_widget().grid(column=1, row=0, rowspan=17,
                                     columnspan=4, sticky="N")
 
-        # Append figures to list and append list
-        # figure_list = []
-        # figure_list.append(fig)
-        # figure_list.append(plot1)
-        # figure_list.append(canvas)
         self.charts_data.append(chart_data)
 
     def chart_addBtnFrame(self):
@@ -106,7 +113,8 @@ class ChartsGUI():
         btn_addCh = tk.Button(
             master=frame,
             text="+", bg="white",
-            width=btnW, height=btnH
+            width=btnW, height=btnH,
+            command=partial(self.addChannel, self.ChannelMenu[-1])
         )
 
         btn_delCh = tk.Button(
@@ -128,6 +136,78 @@ class ChartsGUI():
         frame_list.append(btn_delCh)
         self.charts_frames.append(frame_list)
 
+###############################################################################
+    # def chart_addChannelFrame(self):
+    def chart_addChannelMenu(self):
+        """
+        Methods that adds the main frame that will manage the frames of the options
+        """
+
+        # New lists for current chart
+        self.ChannelMenu.append([])
+        self.ViewVar.append([])
+        self.OptionVar.append([])
+        self.FunVar.append([])
+
+        # Create base frame for menus
+        ch_tk_frame = tk.LabelFrame(self.frames[-1], pady=5, bg="white")
+        self.ChannelMenu[-1].append(ch_tk_frame)
+        self.ChannelMenu[-1].append(self.totalframes)
+        ch_tk_frame.grid( column=0, row=1, padx=5, pady=5, rowspan=16, sticky="N")
+        # OK!
+
+        self.addChannel(self.ChannelMenu[-1])
+
+    def addChannel(self, channel_menu):
+        '''
+        Method that initiate the channel frame which will provide options & control to the user
+        '''
+        ch_menu_frame = channel_menu[0]     # tk LabelFrame
+        chart_index = channel_menu[1]-1       # chart index
+
+        if len(ch_menu_frame.winfo_children()) < 8:
+            # Labelframe to hold checkbutton
+            NewFrameChannel = tk.LabelFrame(ch_menu_frame, bg="white")
+            NewFrameChannel.grid(column=0,
+                                 row=len(ch_menu_frame.winfo_children())-1)
+
+            # Checkbutton 
+            # self.ViewVar[-1].append(tk.IntVar())
+            holdvar = tk.IntVar()
+            Ch_btn = tk.Checkbutton(
+                master=NewFrameChannel,
+                # variable=self.ViewVar[chart_index][len(self.ViewVar[chart_index])-1],
+                variable=holdvar,
+                onvalue=1, offvalue=0, bg="white"
+            )
+            self.ViewVar[chart_index].append(holdvar)
+
+            Ch_btn.grid(row=0, column=0, padx=1)
+# OK!
+            # Option menu
+            # self.ChannelOption(NewFrameChannel, chart_index)
+            # self.ChannelFunc(NewFrameChannel, chart_index)
+
+    def ChannelOption(self, Frame, chart_index):
+        holdvar = tk.StringVar()
+        # self.OptionVar[chart_index].append(tk.StringVar())
+
+        bds = self.dataCtrl.Channels
+
+        self.OptionVar[chart_index][len(
+            self.OptionVar[chart_index])-1].set(bds[0])
+        drop_ch = tk.OptionMenu(Frame, self.OptionVar[chart_index][len(
+            self.OptionVar[chart_index])-1], *bds)
+        
+        drop_ch.config(width=5)
+        drop_ch.grid(row=0, column=1, padx=1)
+
+        self.OptionVar[chart_index].append(holdvar)
+
+    def ChannelFunc(self, Frame, ChannelFrameNumber):
+        pass
+
+###############################################################################
     def killChart(self):
         """
         Remove last chart from screen
@@ -159,4 +239,3 @@ class ChartsGUI():
             rootHeight = 130
 
         self.root.geometry(f"{rootWidth}x{rootHeight}")
-        print(f"{rootWidth}x{rootHeight}")

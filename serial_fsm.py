@@ -124,8 +124,8 @@ class SerialFSM():
 
                     if self.received_packet.command == MsgCommand.SYNC_RESP:
                         # Configure channels
+                        self.dataCtrl.newChannel(ch_id=0, sample_rate=100)
                         self.dataCtrl.newChannel(ch_id=1, sample_rate=100)
-                        self.dataCtrl.newChannel(ch_id=2, sample_rate=100)
 
                         # Send Acknowledge
                         self.serialCtrl.send("#C#$")
