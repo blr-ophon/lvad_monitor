@@ -9,10 +9,9 @@
 #include "MSFP_fsm.h"
 
 
-void MSFP_Init(UART_HandleTypeDef *huart);
+void MSFP_Init(UART_HandleTypeDef *huart, void (*userNotify_callback)(int));
 void MSFP_Connect(void);
 void MSFP_Encode(void);
 void MSFP_Decode(void);
-void MSFP_HaltNotify(void);
 
 #endif

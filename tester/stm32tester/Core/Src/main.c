@@ -100,7 +100,7 @@ int main(void)
 
     RetargetInit(&huart2);
 
-    MSFP_Init(&huart2);
+    MSFP_Init(&huart2, msfp_user_callback);
     // TODO: Add channels
 
     ADCdata_test_generate();

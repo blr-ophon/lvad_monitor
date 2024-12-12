@@ -61,9 +61,12 @@ class SerialCtrl():
         Poll for messages
         """
         msg = self.ser.read_until(b"$")
+        if msg:
+            print(f"      << {msg}")
         return msg if msg else None
 
     def send(self, msg):
+        print(f">> {msg}")
         self.ser.write(msg.encode("utf-8"))
 
     @staticmethod

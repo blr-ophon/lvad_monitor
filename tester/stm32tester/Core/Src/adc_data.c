@@ -7,6 +7,19 @@ extern int ADC_send;
 char d1_str[20] = {0};
 char d2_str[20] = {0};
 
+bool sending = false;
+
+void msfp_user_callback(int notif){
+    switch(notif){
+        case NOTIFY_STOP:
+            sending = false;
+            break;
+        case NOTIFY_START:
+            sending = true;
+            break;
+    }
+}
+
 void ADCdata_test_generate(void) {
     Wave wav1 = {
         WAV_SINE,
@@ -37,7 +50,7 @@ void ADCdata_test_send(void) {
      * Whenever ADC fills the second half of the buffers, the Cplt callback
      * will trigger UART to send half the buffer (the second half) via DMA.
      */
-    for(int i = 0; ADC_send; i++) {
+    for(int i = 0; sending; i++) {
         if(i == 100) {
             i = 0;
         }
@@ -45,7 +58,12 @@ void ADCdata_test_send(void) {
         snprintf(d2_str, 19, "%f", wav2_samples[i]);
         printf("#D#%s#%s#%d#$", d1_str, d2_str, strlen(d1_str) + strlen(d2_str) );
     }
-    MSFP_HaltNotify();
+
+    MSFP_Notify(NOTIFY_HALT);
+
+    while(!sending){
+
+    }
 }
 
 

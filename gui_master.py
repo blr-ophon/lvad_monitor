@@ -1,7 +1,9 @@
-import time
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
+import matplotlib.pyplot as pplt
+from matplotlib.backends.backend_tkagg import FigureCanvasAgg
+
 from serial_fsm import SerialFSM, FSMState
 
 # TODO: geometry variables in separated file
@@ -10,18 +12,19 @@ class RootGUI():
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("LVAD Monitor")
-        self.root.geometry("360x120")
+        self.root.geometry("385x130")
         self.root.config(bg="white")
 
 
 class CommGUI():
     # TODO: Organize this class. Put all attributes in __init__. Rename some functions
     """Communication Manager menu"""
-    def __init__(self, root, serialCtrl):
+    def __init__(self, root, serialCtrl, dataCtrl):
         self.root = root
         self.serialCtrl = serialCtrl
+        self.dataCtrl = dataCtrl
         self.conn = None
-        self.serial_fsm = SerialFSM(serialCtrl, self)
+        self.serial_fsm = SerialFSM(serialCtrl, dataCtrl, self)
 
         # FRAME
         self.frame = tk.LabelFrame(master=root, text="Communication", padx=5,
@@ -68,22 +71,10 @@ class CommGUI():
 
     def BaudOptionMenu(self):
         """Create a drop menu widget to select Baud Rate"""
-        bds = ["-",
-               "300",
-               "600",
-               "1200",
-               "2400",
-               "4800",
-               "9600",
-               "14400",
-               "19200",
-               "28800",
-               "38400",
-               "56000",
-               "57600",
-               "115200",
-               "128000",
-               "256000",]
+        bds = ["-", "300", "600", "1200", "2400", "4800",
+               "9600", "14400", "19200", "28800", "38400",
+               "56000", "57600", "115200", "128000", "256000"]
+
         self.clicked_bd = tk.StringVar()
         self.clicked_bd.set(bds[0])
         self.drop_bd = tk.OptionMenu(
@@ -135,7 +126,7 @@ class CommGUI():
                 # messagebox.showinfo("showinfo", InfoMsg)
 
                 # Create connection manager and start serial fsm thread
-                self.conn = ConnGUI(self.root, self.serial_fsm)
+                self.conn = ConnGUI(self.root, self.serial_fsm, self.dataCtrl)
 
                 self.serial_fsm.start()
                 self.serial_fsm.set_state(FSMState.SYNC)
@@ -179,9 +170,10 @@ class ConnGUI():
     """
     Connection manager menu
     """
-    def __init__(self, root, serial_fsm):
+    def __init__(self, root, serial_fsm, dataCtrl):
         self.root = root
         self.serial_fsm = serial_fsm
+        self.dataCtrl = dataCtrl
 
         self.active_channels = None
 
@@ -211,7 +203,7 @@ class ConnGUI():
                 text="...Sync...",
                 bg="white",
                 fg="orange",
-                width=10,
+                width=5,
         )
         self.lbl_ch = tk.Label(
                 master=self.frame,
@@ -275,12 +267,13 @@ class ConnGUI():
 
         # Publish
         self.ConnGUIOpen()
+        self.dis = DisplayGUI(self.root, self.dataCtrl)
 
     def ConnGUIOpen(self):
         """
         Publish menu on the window
         """
-        self.root.geometry("800x120")
+        self.root.geometry("905x130")
         self.frame.grid(row=0, column=4, rowspan=3, columnspan=5,
                         padx=5, pady=5)
 
@@ -307,9 +300,11 @@ class ConnGUI():
         for widget in self.frame.winfo_children():
             widget.destroy()
         self.frame.destroy()
-        self.root.geometry("360x120")
+        self.root.geometry("385x130")
 
     def status_connected(self, channels_n):
+        # TODO: remove function argument, let it take channel number from
+        # dataCtrl
         self.active_channels = channels_n
 
         self.lbl_sync_status["text"] = "OK"
@@ -364,6 +359,7 @@ class ConnGUI():
         pass
 
     def add_chart(self):
+        self.dis.addMasterChannel()
         pass
 
     def kill_chart(self):
@@ -371,6 +367,78 @@ class ConnGUI():
 
     def save_data(self):
         pass
+
+
+
+class DisplayGUI():
+    def __init__(self, root, dataCtrl):
+        self.root = root
+        self.dataCtrl = dataCtrl
+
+        self.frames = []
+        self.framesCol = 0
+        self.framesRow = 4
+        self.totalframes = 0
+
+        self.figures = []
+
+    def addMasterChannel(self):
+        self.addMasterFrame()
+        self.adjustRootFrame()
+
+    def addMasterFrame(self):
+        """
+        Frame where all charts will be
+        """
+        master_frame = tk.LabelFrame(
+            master=self.root,
+            text=f"Display Manager - {len(self.frames)+1}",
+            padx=5, pady=5, bg="white"
+        )
+        self.frames.append(master_frame)
+        self.totalframes = len(self.frames)-1
+
+        if self.totalframes % 2 == 0:
+            self.framesCol = 0
+        else:
+            self.framesCol = 9
+
+        self.framesRow = 4 + (4 * int(self.totalframes/2))
+        self.frames[self.totalframes].grid(
+            padx=5,
+            column=self.framesCol,
+            row=self.framesRow,
+            columnspan=9,
+            sticky="NW"
+        )
+
+    def adjustRootFrame(self):
+        """
+        Resize window to accomodate chart frames
+        """
+        self.totalframes = len(self.frames)-1
+        rootWidth = 905
+        rootHeight = 130 + 430 * (int(self.totalframes/2)+1)
+
+        if self.totalframes > 0:
+            rootWidth = 905*2
+
+        if self.totalframes+1 == 0:
+            rootHeight = 130
+
+        self.root.geometry(f"{rootWidth}x{rootHeight}")
+
+    def addGraph(self):
+        self.figures.append([])
+        self.figures[self.totalframes].append(pplt.Figure(figsize=(7,5), dpi=80))
+        self.figures[self.totalframes].append(self.figures[self.totalframes][0].add_subplot(111))
+
+        figCanvas = FigureCanvasAgg(self.figures[self.totalframes][0],
+                                    master=self.frames[self.totalframes])
+        self.figures[self.totalframes].append(figCanvas)
+
+        self.figures[self.totalframes][2].get_tk_widget().grid(column=1)
+
 
 
 if __name__ == "__main__":

@@ -29,9 +29,10 @@ class SerialFSM():
     """
     Finite state machine for serial connection
     """
-    def __init__(self, serialCtrl, gui):
+    def __init__(self, serialCtrl, dataCtrl, gui):
         self.state = FSMState.IDLE
         self.serialCtrl = serialCtrl
+        self.dataCtrl = dataCtrl
 
         self.thread = None
         self.change_state = threading.Condition()
@@ -81,9 +82,7 @@ class SerialFSM():
         self.serialCtrl.send("#A#$")
 
     def stop_request(self):
-        print("sending stop")
         self.serialCtrl.send("#S#$")
-        print("stop sent")
 
     def run(self):
         """
@@ -116,37 +115,43 @@ class SerialFSM():
                         continue
 
                     # Parse and validate response
-                    if response is not None:
+                    if response is None:
+                        continue
+
+                    self.received_packet = MsgParse(response)
+                    if self.received_packet is None:
+                        continue
+
+                    if self.received_packet.command == MsgCommand.SYNC_RESP:
+                        # Configure channels
+                        self.dataCtrl.newChannel(ch_id=1, sample_rate=100)
+                        self.dataCtrl.newChannel(ch_id=2, sample_rate=100)
+
+                        # Send Acknowledge
+                        self.serialCtrl.send("#C#$");
+                        response = self.serialCtrl.listen()
                         print(response)
-                        self.received_packet = MsgParse(response)
-                        if self.received_packet is None:
-                            continue
 
-                        if self.received_packet.command == MsgCommand.SYNC_RESP:
-                            # Send Acknowledge
-                            self.serialCtrl.send("#C#$");
+                        # Switch to connected
+                        self.set_state(FSMState.CONNECTED)
 
-                            # Switch to connected
-                            self.set_state(FSMState.CONNECTED)
+                        #  Update GUI
+                        self.gui.conn.status_connected(self.received_packet.channels_n)
 
+                    else:
+                        # TODO: improper, this does not handle the MCU not sending anything
+                        # Try syncing until timeout
+                        if not sync_timeout_start:
+                            sync_timeout_start = True
+                            sync_timeout_start_time = time.time()
 
+                        if time.time() - sync_timeout_start_time > 3:
+                            sync_timeout_start = False
+                            print(">> SYNC failed")
+                            # Return to IDLE
+                            self.set_state(FSMState.IDLE)
                             #  Update GUI
-                            self.gui.conn.status_connected(self.received_packet.channels_n)
-
-                        else:
-                            # TODO: improper, this does not handle the MCU not sending anything
-                            # Try syncing until timeout
-                            if not sync_timeout_start:
-                                sync_timeout_start = True
-                                sync_timeout_start_time = time.time()
-
-                            if time.time() - sync_timeout_start_time > 3:
-                                sync_timeout_start = False
-                                print(">> SYNC failed")
-                                # Return to IDLE
-                                self.set_state(FSMState.IDLE)
-                                #  Update GUI
-                                self.gui.conn.status_failed()
+                            self.gui.conn.status_failed()
 
                 elif self.state == FSMState.CONNECTED:
                     self.print_fsm_state(self.state)
@@ -161,17 +166,21 @@ class SerialFSM():
                 elif self.state == FSMState.LISTENING:
                     # Poll for message
                     response = self.serialCtrl.listen()
-                    if response is not None:
-                        print(response)
-                        self.received_packet = MsgParse(response)
+                    if response is None:
+                        continue
 
-                        if self.received_packet.command == MsgCommand.STOP:
-                            # Switch back to connected
-                            print("STOP received")
-                            self.set_state(FSMState.CONNECTED)
-                    # Parse data and call GUI to plot it
-                    # In case of dropped connection, call GUI routine to stop plotting
-                    # and display error message, then return to CONNECTED
+                    # Parse data
+                    self.received_packet = MsgParse(response)
+
+                    if self.received_packet.command == MsgCommand.STOP:
+                        # Switch back to connected
+                        self.set_state(FSMState.CONNECTED)
+
+                    elif self.received_packet.command == MsgCommand.REQ_RESP:
+                        # print(f"{self.received_packet.channel1_data}   {self.received_packet.channel2_data}")
+                        self.dataCtrl.appendData(ch_id=1, data=self.received_packet.channel1_data)
+                        self.dataCtrl.appendData(ch_id=2, data=self.received_packet.channel2_data)
+                        # append data do dataCtrl
 
     @staticmethod
     def print_fsm_state(state):

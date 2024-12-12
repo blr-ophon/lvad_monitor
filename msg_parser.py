@@ -15,6 +15,9 @@ class MsgCommand(Enum):
 class parsedMsg:
     command: int
     channels_n: int
+    channel1_data: float
+    channel2_data: float
+
 
 def MsgParse(raw_msg):
     """
@@ -24,7 +27,7 @@ def MsgParse(raw_msg):
     if not msg_tokens:
         print(f"Invalid Message: {raw_msg}")
         return None
-    parsed_msg = parsedMsg(None, None)
+    parsed_msg = parsedMsg(None, None, None, None)
 
     match msg_tokens[0]:
         case "?":
@@ -43,6 +46,8 @@ def MsgParse(raw_msg):
 
         case "D":
             parsed_msg.command = MsgCommand.REQ_RESP
+            parsed_msg.channel1_data = msg_tokens[1]
+            parsed_msg.channel2_data = msg_tokens[2]
 
         case "S":
             parsed_msg.command = MsgCommand.STOP

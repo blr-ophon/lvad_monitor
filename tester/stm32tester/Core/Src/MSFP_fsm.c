@@ -2,16 +2,41 @@
 
 #define RECV_BUFFER_SIZE 100
 
+extern UART_HandleTypeDef *msfp_huart;
+
 uint8_t msfp_recvBuf[RECV_BUFFER_SIZE] = {0};
 uint8_t msfp_recvBufIndex = 0;
 
 uint8_t FSM_State = STATE_IDLE;
-bool waiting_halt_notification = false;
+bool user_halt = false;
+bool user_ready = false;
 
+/*
+ * Callback. This function will be called whenever MSFP has to notify the user
+ * (START and STOP)
+ */
+void (*userNotify)(int);
+
+// TODO: append to packet queue?
 MSFP_Packet last_packet;
 
-// TODO: remove
-extern int ADC_send;
+
+void MSFP_Notify(MSFP_Notification notif){
+    switch(notif){
+        case NOTIFY_READY:
+            user_ready = true;
+            break;
+        case NOTIFY_HALT:
+            if(FSM_State == STATE_TRANS){
+                user_halt = true;
+            }
+            break;
+        default:
+            break;
+    }
+
+    MSFP_fsm_update(msfp_huart);
+}
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
@@ -44,8 +69,8 @@ void MSFP_ReceiveMsg(UART_HandleTypeDef *huart) {
         // Parse packet
         MSFP_Packet packet;
         if(MSFP_ParseMsg(msfp_recvBuf, msfp_recvBufIndex, &packet) > 0){
-            // Notify fsm
             last_packet = packet;
+            // Notify fsm
             MSFP_fsm_update(huart);
         }
 
@@ -73,10 +98,10 @@ int MSFP_fsm_update(UART_HandleTypeDef *huart){
             if(last_packet.type == PKTTYPE_SYNC){
                 // Respond SYNC packet
                 //char *msg = "(MCU) SYNC RECEIVED\r\n";
+                FSM_State = STATE_SYNC;
                 char *msg = "#!#2#$";
                 HAL_UART_Transmit_IT(huart, (uint8_t*)msg, strlen(msg));
                 // printf("(MCU) SYNC RECEIVED (i:%d)\r\n", msfp_recvBufIndex);
-                FSM_State = STATE_SYNC;
             }
             break;
 
@@ -86,6 +111,10 @@ int MSFP_fsm_update(UART_HandleTypeDef *huart){
                 //char *msg = "(MCU) ACK received";
                 //HAL_UART_Transmit_IT(huart, (uint8_t*)msg, strlen(msg));
                 FSM_State = STATE_CONN;
+            }else{
+                char *msg = ". ";
+                HAL_UART_Transmit_IT(huart, (uint8_t*)msg, strlen(msg));
+                //FSM_State = STATE_IDLE;
             }
             // Set peripherals
             break;
@@ -94,7 +123,12 @@ int MSFP_fsm_update(UART_HandleTypeDef *huart){
             // Waiting for transfer instructions
             if(last_packet.type == PKTTYPE_REQ){
                 FSM_State = STATE_TRANS;
-                ADC_send = SET;
+                userNotify(NOTIFY_START);
+
+            }else{
+                char *msg = ". ";
+                HAL_UART_Transmit_IT(huart, (uint8_t*)msg, strlen(msg));
+                //FSM_State = STATE_IDLE;
             }
             // Respond to keep alive
             break;
@@ -102,19 +136,18 @@ int MSFP_fsm_update(UART_HandleTypeDef *huart){
         case STATE_TRANS:
             // Allow data until stop is called
 
-            if(waiting_halt_notification){
+            if(user_halt){
                 // Wait for MCU to stop it's tasks
                 char *msg = "#S#$";
                 HAL_UART_Transmit(huart, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
                 FSM_State = STATE_CONN;
-                waiting_halt_notification = false;
+                user_halt = false;
             }
 
             else if(last_packet.type == PKTTYPE_STOP){
                 //Respond stop
-                // Signal to datasend task to stop
-                ADC_send = RESET;
-                waiting_halt_notification = true;
+                // Signal stop request from controller. Wait for user halt
+                userNotify(NOTIFY_STOP);
             }
             break;
     }

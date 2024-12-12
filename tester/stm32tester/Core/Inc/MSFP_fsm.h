@@ -15,7 +15,15 @@ typedef enum{
     STATE_TRANS,
 } MSFP_State;
 
+typedef enum{
+    NOTIFY_STOP,
+    NOTIFY_START,
+    NOTIFY_READY,
+    NOTIFY_HALT,
+} MSFP_Notification;
+
 int MSFP_fsm_update(UART_HandleTypeDef *huart);
 void MSFP_ReceiveMsg(UART_HandleTypeDef *huart);
+void MSFP_Notify(MSFP_Notification notif);
 
 #endif

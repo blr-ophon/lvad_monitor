@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 typedef enum{
+    PKTTYPE_UNKNOWN,
     PKTTYPE_SYNC,
     PKTTYPE_SYNC_RESP,
     PKTTYPE_ACK,
