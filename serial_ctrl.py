@@ -36,7 +36,7 @@ class SerialCtrl():
             self.ser = serial.Serial(
                     port=port,
                     baudrate=baudrate,
-                    timeout=0.1,
+                    timeout=2,
             )
             self.status = True
             print(f"Opened port: {self.ser.port} (baud: {self.ser.baudrate})")

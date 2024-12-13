@@ -45,8 +45,9 @@ def MsgParse(raw_msg):
 
         case "D":
             parsed_msg.command = MsgCommand.DATA
-            parsed_msg.channels_data.append(msg_tokens[1])
-            parsed_msg.channels_data.append(msg_tokens[2])
+            if len(msg_tokens) > 3:
+                parsed_msg.channels_data.append(msg_tokens[1])
+                parsed_msg.channels_data.append(msg_tokens[2])
 
         case "S":
             parsed_msg.command = MsgCommand.STOP

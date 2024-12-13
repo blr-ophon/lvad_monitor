@@ -148,6 +148,7 @@ class CommGUI():
         """
         self.commTask.stop()          # Close fsm
         self.serialCtrl.SerialClose()   # Close port
+        self.gui_conn.chartman.destroy()
         self.gui_conn.ConnGUIClose()        # Close menu
 
         self.btn_connect["text"] = "Connect"
@@ -173,10 +174,11 @@ class ConnGUI():
     """
     Connection manager menu
     """
-    def __init__(self, root, serial_fsm, dataStream):
+    def __init__(self, root, commTask, dataStream):
         self.root = root
-        self.serial_fsm = serial_fsm
+        self.commTask = commTask
         self.dataStream = dataStream
+        self.chartman = ChartsManagerGUI(self.root, self.dataStream)
 
         self.active_channels = None
 
@@ -265,12 +267,10 @@ class ConnGUI():
                 command=dataStream.toggleSave)
 
         # Additional
-
         self.separator = ttk.Separator(self.frame, orient="vertical")
 
         # Publish
         self.ConnGUIOpen()
-        self.gui_charts = ChartsManagerGUI(self.root, self.dataStream)
 
     def ConnGUIOpen(self):
         """
@@ -354,17 +354,19 @@ class ConnGUI():
         Request data from MCU according to user specification
         and plot them in the specified charts
         """
-        # TODO: get input from button
-        self.serial_fsm.request_data(1)
+        self.chartman.initPlotTask()
+        # Send request to MCU
+        self.commTask.request_data(2)
+        # Start plotting if there are charts
 
     def stop_stream(self):
-        self.serial_fsm.stop_request()
+        self.commTask.stop_request()
 
     def add_chart(self):
-        self.gui_charts.newChart()
+        self.chartman.newChart()
 
     def kill_chart(self):
-        self.gui_charts.killChart()
+        self.chartman.killChart()
 
 
 if __name__ == "__main__":

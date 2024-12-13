@@ -17,19 +17,35 @@ class ChartGUI():
 
         self.fig = None
         self.canvas = None
-        self.plot1 = None
+        self.axes = None
 
         self.checkbox_vars = []
+
+        # Plotting
+        self.x_data = []
+        self.y_data = []
+        self.index = 0
 
         self.drawGraph()
         self.drawChannelMenu()
 
-
     def plot(self):
+        # self.axes.set_xlim([min(data), max(data)])
+        # self.axes.set_ylim([min(data), max(data)])
+        self.start_animation()
+
+        # plotting the graph
+        # self.axes.plot(y)
+        # self.canvas.draw()
+
+        return
+        # data = [channels[1]
         for i in range(len(self.channels)):
             if self.checkbox_vars[i].get():
                 # Plot
-                pass
+                self.axes.plot(list(self.channels[i].data))
+                # breakpoint()
+        self.canvas.draw()
 
     def drawGraph(self):
         """
@@ -37,10 +53,27 @@ class ChartGUI():
         """
         self.fig = pplt.Figure(figsize=(7, 5), dpi=80)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
-        self.plot1 = self.fig.add_subplot(111)
+        self.axes = self.fig.add_subplot(111)
 
         self.canvas.get_tk_widget().grid(column=1, row=0, rowspan=17,
                                          columnspan=4, sticky="N")
+
+        ##########
+        self.line, = self.axes.plot([], [], 'b-')  # Initialize an empty plot
+        self.start_animation()
+        ##########
+
+    def start_animation(self):
+        if self.index <= 100:
+            self.x_data.append(self.index)
+            self.y_data.append(self.index**2)
+
+            self.line.set_data(self.x_data, self.y_data)
+            self.axes.set_xlim(0, 100)
+            self.axes.set_ylim(0, 10000)
+            self.canvas.draw()
+
+            self.index += 1
 
     def drawChannelMenu(self):
         """
@@ -84,6 +117,30 @@ class ChartsManagerGUI():
         # list of chart data for each chart
         self.Charts = []
 
+        # Threading
+        self.plotThread = None
+        self.new_data = None
+
+    def initPlotTask(self):
+        self.plotThread = threading.Thread(target=self.plotData, daemon=True)
+        self.new_data = threading.Condition()
+        self.plotThread.start()
+
+    def plotData(self):
+        """
+        Start plotting all charts
+        """
+        while True:
+            with self.new_data:
+                if self.total_charts > 0:
+                    for chart in self.Charts:
+                        chart.plot()
+                self.new_data.wait()
+
+    def triggerPlot(self):
+        with self.new_data:
+            self.new_data.notify()
+
     def newChart(self):
         """
         Frame where all charts will be
@@ -118,6 +175,14 @@ class ChartsManagerGUI():
 
         self.adjustRootFrame()
 
+    def destroy(self):
+        for chart in self.Charts:
+            self.total_charts -= 1
+
+            chart.destroy()
+
+            self.adjustRootFrame()
+
     def killChart(self):
         """
         Remove last chart from screen
@@ -129,13 +194,6 @@ class ChartsManagerGUI():
             chart.destroy()
 
             self.adjustRootFrame()
-
-    def plotData(self):
-        """
-        Start plotting all charts
-        """
-        for chart in self.Charts:
-            chart.plot()
 
     def adjustRootFrame(self):
         """

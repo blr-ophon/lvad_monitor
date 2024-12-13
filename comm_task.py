@@ -130,8 +130,6 @@ class CommTask():
 
                         # Send Acknowledge
                         self.serialCtrl.send("#C#$")
-                        response = self.serialCtrl.listen()
-                        print(response)
 
                         # Switch to connected
                         self.set_state(CommTaskState.CONNECTED)
@@ -167,6 +165,7 @@ class CommTask():
                 elif self.state == CommTaskState.LISTENING:
                     # Poll for message
                     response = self.serialCtrl.listen()
+                    print(response)
                     if response is None:
                         continue
 
@@ -181,6 +180,7 @@ class CommTask():
                         # print(f"{self.received_packet.channel1_data}   {self.received_packet.channel2_data}")
                         enum_data = enumerate(self.received_packet.channels_data)
                         self.dataStream.appendData(enum_data)
+                        self.gui.gui_conn.chartman.triggerPlot()
 
     @staticmethod
     def print_fsm_state(state):

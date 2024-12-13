@@ -3,6 +3,7 @@
 static float wav1_samples[100] = {0};
 static float wav2_samples[100] = {0};
 extern int ADC_send;
+extern UART_HandleTypeDef huart2;
 
 char d1_str[20] = {0};
 char d2_str[20] = {0};
@@ -54,9 +55,14 @@ void ADCdata_test_send(void) {
         if(i == 100) {
             i = 0;
         }
+        char msg[50]; // Adjust size as needed
         snprintf(d1_str, 19, "%f", wav1_samples[i]);
         snprintf(d2_str, 19, "%f", wav2_samples[i]);
-        printf("#D#%s#%s#%d#$", d1_str, d2_str, strlen(d1_str) + strlen(d2_str) );
+        snprintf(msg, sizeof(msg), "#D#%s#%s#%d#$", d1_str, d2_str, strlen(d1_str) + strlen(d2_str));
+
+        //printf("#D#%s#%s#%d#$", d1_str, d2_str, strlen(d1_str) + strlen(d2_str) );
+        HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+        HAL_Delay(1000);
     }
 
     MSFP_Notify(NOTIFY_HALT);
