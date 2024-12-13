@@ -317,7 +317,6 @@ class ConnGUI():
         self.lbl_ch_status["fg"] = "green"
 
         self.btn_start_stream["state"] = "active"
-        self.btn_stop_stream["state"] = "active"
         if channels_n > 0:
             self.btn_add_chart["state"] = "active"
             self.btn_kill_chart["state"] = "active"
@@ -354,13 +353,18 @@ class ConnGUI():
         Request data from MCU according to user specification
         and plot them in the specified charts
         """
+        self.btn_stop_stream["state"] = "active"
+        self.btn_start_stream["state"] = "disabled"
         self.chartman.initPlotTask()
         # Send request to MCU
         self.commTask.request_data(2)
         # Start plotting if there are charts
 
     def stop_stream(self):
+        self.btn_stop_stream["state"] = "disabled"
+        self.btn_start_stream["state"] = "active"
         self.commTask.stop_request()
+        self.chartman.stopPlotTask()
 
     def add_chart(self):
         self.chartman.newChart()

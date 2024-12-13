@@ -45,23 +45,8 @@ class ChartGUI():
             self.canvas.draw()
 
 
-    def dep_plot(self):
-        # self.axes.set_xlim([min(data), max(data)])
-        # self.axes.set_ylim([min(data), max(data)])
-        # self.start_animation()
-
-        # plotting the graph
-        # self.axes.plot(y)
-        # self.canvas.draw()
-
-        return
-        # data = [channels[1]
-        for i in range(len(self.channels)):
-            if self.checkbox_vars[i].get():
-                # Plot
-                self.axes.plot(list(self.channels[i].data))
-                # breakpoint()
-        self.canvas.draw()
+    def clear(self):
+        self.axes.cla()
 
     def drawGraph(self):
         """
@@ -75,12 +60,10 @@ class ChartGUI():
                                          columnspan=4, sticky="N")
 
         # Initialize empty plots
-        line0, = self.axes.plot([], [], 'b-')
-        line0.set_color(line_colors[0])
-        line1, = self.axes.plot([], [], 'b-')
-        line1.set_color(line_colors[1])
-        self.lines.append(line0)
-        self.lines.append(line1)
+        for i in range(len(self.channels)):
+            line, = self.axes.plot([], [], 'b-')
+            line.set_color(line_colors[i])
+            self.lines.append(line)
 
     def drawChannelMenu(self):
         """
@@ -127,6 +110,7 @@ class ChartsManagerGUI():
         # Threading
         self.plotThread = None
         self.new_data = None
+        self.running = False
 
         # PLOTTING
         self.x_data = []
@@ -134,7 +118,18 @@ class ChartsManagerGUI():
         self.period = 1
         self.plot_index = 0
 
+    def stopPlotTask(self):
+        self.running = False
+        with self.new_data:
+            # wait for lock release
+            self.new_data.notify()
+        self.plotThread.join()
+        self.x_data = []
+        self.y_data_list = [[], []]
+        self.plot_index = 0
+
     def initPlotTask(self):
+        self.running = True
         self.plotThread = threading.Thread(target=self.plotData, daemon=True)
         self.new_data = threading.Condition()
         self.plotThread.start()
@@ -143,7 +138,7 @@ class ChartsManagerGUI():
         """
         Start plotting all charts
         """
-        while True:
+        while self.running:
             with self.new_data:
                 if self.total_charts > 0:
                     for chart in self.Charts:
@@ -153,8 +148,8 @@ class ChartsManagerGUI():
     def triggerPlot(self):
         with self.new_data:
             # Append new data from datastream to plot data
-            self.plot_index += 1
             self.x_data.append(float(self.period * self.plot_index))
+            self.plot_index += 1
             for ch_index, channels in self.dataStream.channels.items():
                 self.y_data_list[ch_index].append(float(channels.data))
 
