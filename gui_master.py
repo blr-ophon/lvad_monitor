@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
-from serial_fsm import SerialFSM, FSMState
+from comm_task import CommTask, CommTaskState
 from gui_charts import ChartsManagerGUI
+from serial_ctrl import SerialCtrl
+from data_stream import DataStream
 
 # TODO: geometry variables in separated file
 
@@ -17,12 +19,16 @@ class RootGUI():
 class CommGUI():
     # TODO: Organize this class. Put all attributes in __init__. Rename some functions
     """Communication Manager menu"""
-    def __init__(self, root, serialCtrl, dataCtrl):
+    def __init__(self, root):
         self.root = root
-        self.serialCtrl = serialCtrl
-        self.dataCtrl = dataCtrl
+        self.serialCtrl = SerialCtrl()
+        self.dataStream = DataStream()
+
         self.gui_conn = None
-        self.serial_fsm = SerialFSM(serialCtrl, dataCtrl, self)
+        # self.gui_chartman = ChartsManagerGUI()
+
+        # Tasks
+        self.commTask = CommTask(self.serialCtrl, self.dataStream, self)
 
         # FRAME
         self.frame = tk.LabelFrame(master=root, text="Communication", padx=5,
@@ -123,11 +129,11 @@ class CommGUI():
                 #             successfully opened"
                 # messagebox.showinfo("showinfo", InfoMsg)
 
-                # Create connection manager and start serial fsm thread
-                self.gui_conn = ConnGUI(self.root, self.serial_fsm, self.dataCtrl)
+                # Create connection manager and start communication task
+                self.gui_conn = ConnGUI(self.root, self.commTask, self.dataStream)
 
-                self.serial_fsm.start()
-                self.serial_fsm.set_state(FSMState.SYNC)
+                self.commTask.start()
+                self.commTask.set_state(CommTaskState.SYNC)
 
             else:
                 ErrorMsg = f"Failure to establish serial connection using\
@@ -140,7 +146,7 @@ class CommGUI():
         """
         Close the connection
         """
-        self.serial_fsm.stop()          # Close fsm
+        self.commTask.stop()          # Close fsm
         self.serialCtrl.SerialClose()   # Close port
         self.gui_conn.ConnGUIClose()        # Close menu
 
@@ -167,10 +173,10 @@ class ConnGUI():
     """
     Connection manager menu
     """
-    def __init__(self, root, serial_fsm, dataCtrl):
+    def __init__(self, root, serial_fsm, dataStream):
         self.root = root
         self.serial_fsm = serial_fsm
-        self.dataCtrl = dataCtrl
+        self.dataStream = dataStream
 
         self.active_channels = None
 
@@ -254,9 +260,9 @@ class ConnGUI():
         self.save = False
         self.SaveVar = tk.IntVar()
         self.chkbtn_save = tk.Checkbutton(
-                master=self.frame, text="Save data", variable=self.SaveVar,
+                master=self.frame, text="Save data", variable=dataStream.save,
                 onvalue=1, offvalue=0, bg="white", state="disabled",
-                command=self.save_data)
+                command=dataStream.toggleSave)
 
         # Additional
 
@@ -264,7 +270,7 @@ class ConnGUI():
 
         # Publish
         self.ConnGUIOpen()
-        self.gui_charts = ChartsManagerGUI(self.root, self.dataCtrl)
+        self.gui_charts = ChartsManagerGUI(self.root, self.dataStream)
 
     def ConnGUIOpen(self):
         """
@@ -301,7 +307,7 @@ class ConnGUI():
 
     def status_connected(self, channels_n):
         # TODO: remove function argument, let it take channel number from
-        # dataCtrl
+        # taskDataStream
         self.active_channels = channels_n
 
         self.lbl_sync_status["text"] = "OK"
@@ -359,9 +365,6 @@ class ConnGUI():
 
     def kill_chart(self):
         self.gui_charts.killChart()
-
-    def save_data(self):
-        pass
 
 
 if __name__ == "__main__":

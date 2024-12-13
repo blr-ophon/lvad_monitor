@@ -15,7 +15,7 @@ from enum import Enum
 from msg_parser import MsgParse, MsgCommand
 
 
-class FSMState(Enum):
+class CommTaskState(Enum):
     IDLE = 1
     SYNC = 2
     CONNECTED = 3
@@ -25,17 +25,17 @@ class FSMState(Enum):
         return self.name
 
 
-class SerialFSM():
+class CommTask():
     """
     Finite state machine for serial connection
     """
-    def __init__(self, serialCtrl, dataCtrl, gui):
-        self.state = FSMState.IDLE
+    def __init__(self, serialCtrl, dataStream, gui):
+        self.state = CommTaskState.IDLE
         self.serialCtrl = serialCtrl
-        self.dataCtrl = dataCtrl
+        self.dataStream = dataStream
 
         self.thread = None
-        self.change_state = threading.Condition()
+        self.change_state = None
 
         self.running = False
         self.received_packet = None
@@ -47,6 +47,7 @@ class SerialFSM():
         Start finite state machine
         """
         self.running = True
+        self.change_state = threading.Condition()
         self.thread = threading.Thread(target=self.run, daemon=True)
         self.thread.start()
 
@@ -55,7 +56,7 @@ class SerialFSM():
         Stop finite state machine
         """
         self.running = False
-        self.set_state(FSMState.IDLE)
+        self.set_state(CommTaskState.IDLE)
         self.thread.join()
 
     def set_state(self, new_state):
@@ -72,12 +73,12 @@ class SerialFSM():
         """
         send REQUEST message with user specified number of channels
         """
-        if self.state != FSMState.CONNECTED:
+        if self.state != CommTaskState.CONNECTED:
             print("Error: Not connected")
             return
 
         print(f"Requesting {channels_n} channels")
-        self.set_state(FSMState.LISTENING)
+        self.set_state(CommTaskState.LISTENING)
         self.print_fsm_state(self.state)
         self.serialCtrl.send("#A#$")
 
@@ -94,12 +95,12 @@ class SerialFSM():
         while self.running:
             with self.change_state:
 
-                if self.state == FSMState.IDLE:
+                if self.state == CommTaskState.IDLE:
                     # Do nothing. Wait for user/GUI to change this state
                     self.print_fsm_state(self.state)
                     self.change_state.wait()
 
-                elif self.state == FSMState.SYNC:
+                elif self.state == CommTaskState.SYNC:
                     self.print_fsm_state(self.state)
 
                     # Send sync packet
@@ -124,8 +125,8 @@ class SerialFSM():
 
                     if self.received_packet.command == MsgCommand.SYNC_RESP:
                         # Configure channels
-                        self.dataCtrl.newChannel(ch_id=0, sample_rate=100)
-                        self.dataCtrl.newChannel(ch_id=1, sample_rate=100)
+                        for i in range(self.received_packet.channels_n):
+                            self.dataStream.newChannel(ch_id=i, sample_rate=100)
 
                         # Send Acknowledge
                         self.serialCtrl.send("#C#$")
@@ -133,7 +134,7 @@ class SerialFSM():
                         print(response)
 
                         # Switch to connected
-                        self.set_state(FSMState.CONNECTED)
+                        self.set_state(CommTaskState.CONNECTED)
 
                         #  Update GUI
                         self.gui.gui_conn.status_connected(self.received_packet.channels_n)
@@ -149,11 +150,11 @@ class SerialFSM():
                             sync_timeout_start = False
                             print(">> SYNC failed")
                             # Return to IDLE
-                            self.set_state(FSMState.IDLE)
+                            self.set_state(CommTaskState.IDLE)
                             #  Update GUI
                             self.gui.gui_conn.status_failed()
 
-                elif self.state == FSMState.CONNECTED:
+                elif self.state == CommTaskState.CONNECTED:
                     self.print_fsm_state(self.state)
 
                     # TODO: keep connection alive through PING
@@ -163,7 +164,7 @@ class SerialFSM():
                     # Send message to MCU
                     # Switch state to listening
 
-                elif self.state == FSMState.LISTENING:
+                elif self.state == CommTaskState.LISTENING:
                     # Poll for message
                     response = self.serialCtrl.listen()
                     if response is None:
@@ -174,32 +175,32 @@ class SerialFSM():
 
                     if self.received_packet.command == MsgCommand.STOP:
                         # Switch back to connected
-                        self.set_state(FSMState.CONNECTED)
+                        self.set_state(CommTaskState.CONNECTED)
 
                     elif self.received_packet.command == MsgCommand.DATA:
                         # print(f"{self.received_packet.channel1_data}   {self.received_packet.channel2_data}")
                         enum_data = enumerate(self.received_packet.channels_data)
-                        self.dataCtrl.appendData(enum_data)
+                        self.dataStream.appendData(enum_data)
 
     @staticmethod
     def print_fsm_state(state):
         color = 34
         match state:
-            case FSMState.IDLE:
+            case CommTaskState.IDLE:
                 color = 34
-            case FSMState.SYNC:
+            case CommTaskState.SYNC:
                 color = 33
-            case FSMState.CONNECTED:
+            case CommTaskState.CONNECTED:
                 color = 31
-            case FSMState.LISTENING:
+            case CommTaskState.LISTENING:
                 color = 92
 
         print(f"\033[{color}m[{state}]\033[0m")
 
 if __name__ == "__main__":
-    fsm = SerialFSM(None, None, None)
+    fsm = CommTask(None, None, None)
     fsm.start()
 
     while True:
-        fsm.set_state(FSMState.SYNC)
+        fsm.set_state(CommTaskState.SYNC)
         time.sleep(5)

@@ -1,6 +1,7 @@
 import tkinter as tk
 import matplotlib.pyplot as pplt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import threading
 
 # fig: pplt.Figure
 # canvas: FigureCanvasTkAgg
@@ -10,17 +11,25 @@ class ChartGUI():
     """
     Single chart with graph and manageable channels to plot
     """
-    def __init__(self, frame):
+    def __init__(self, frame, channels):
         self.frame = frame
+        self.channels = channels
+
         self.fig = None
         self.canvas = None
         self.plot1 = None
-        # self.plot_list
-        self.channels_list = []
+
         self.checkbox_vars = []
 
         self.drawGraph()
         self.drawChannelMenu()
+
+
+    def plot(self):
+        for i in range(len(self.channels)):
+            if self.checkbox_vars[i].get():
+                # Plot
+                pass
 
     def drawGraph(self):
         """
@@ -31,7 +40,7 @@ class ChartGUI():
         self.plot1 = self.fig.add_subplot(111)
 
         self.canvas.get_tk_widget().grid(column=1, row=0, rowspan=17,
-                                    columnspan=4, sticky="N")
+                                         columnspan=4, sticky="N")
 
     def drawChannelMenu(self):
         """
@@ -40,14 +49,14 @@ class ChartGUI():
         main_frame = tk.LabelFrame(master=self.frame, text="Available Channels", bg="white")
         main_frame.grid(column=0, row=0, padx=5, pady=5, sticky="N")
 
-        for channel in range(6):
+        for i in range(len(self.channels)):
             sub_frame = tk.Frame(master=main_frame)
-            sub_frame.grid(row=channel, column=0, pady=5, padx=5, sticky="w")
+            sub_frame.grid(row=i, column=0, pady=5, padx=5, sticky="w")
 
             var = tk.IntVar()
             self.checkbox_vars.append(var)
 
-            checkbox = tk.Checkbutton(sub_frame, text=f"aaaaaaaaaaaaaaaaaaaaaaaaaaChannel {channel}", variable=var)
+            checkbox = tk.Checkbutton(sub_frame, text=f"Channel {i}", variable=var)
             checkbox.grid(row=0, column=0, padx=5)
 
     def destroy(self):
@@ -60,9 +69,12 @@ class ChartGUI():
 
 
 class ChartsManagerGUI():
-    def __init__(self, root, dataCtrl):
+    """
+    Manages all charts
+    """
+    def __init__(self, root, dataStream):
         self.root = root
-        self.dataCtrl = dataCtrl
+        self.dataCtrl = dataStream
 
         self.frames = []
         self.framesCol = 0
@@ -76,7 +88,7 @@ class ChartsManagerGUI():
         """
         Frame where all charts will be
         """
-        self.total_charts +=1
+        self.total_charts += 1
 
         frame = tk.LabelFrame(
             master=self.root,
@@ -101,7 +113,7 @@ class ChartsManagerGUI():
             sticky="NW"
         )
 
-        new_chart = ChartGUI(frame)
+        new_chart = ChartGUI(frame, self.dataCtrl.channels)
         self.Charts.append(new_chart)
 
         self.adjustRootFrame()
@@ -117,6 +129,13 @@ class ChartsManagerGUI():
             chart.destroy()
 
             self.adjustRootFrame()
+
+    def plotData(self):
+        """
+        Start plotting all charts
+        """
+        for chart in self.Charts:
+            chart.plot()
 
     def adjustRootFrame(self):
         """

@@ -15,6 +15,7 @@ in the charts he wants
 """
 from dataclasses import dataclass
 from enum import Enum
+import tkinter as tk
 
 
 @dataclass
@@ -27,19 +28,18 @@ class DataChannel():
     data: float
 
 
-class DataCtrl():
+class DataStream():
     """
     Control of all data channels
     """
     def __init__(self):
         self.channels: dict[int, DataChannel] = {}
-        self.data_rdy = False
+        self.channels_n = 0
 
-        # self.read_thread = None
-        # self.write_thread = None
+        self.save = tk.IntVar()
 
-        self.save = False
-        self.lock = False
+    def toggleSave(self):
+        print(f"save: {"ON" if self.save.get() else "OFF"}")
 
     def newChannel(self, ch_id, sample_rate):
         """
@@ -48,31 +48,23 @@ class DataCtrl():
         new_channel = DataChannel(sample_rate, 0)
 
         self.channels[ch_id] = new_channel
+
+        self.channels_n += 1
         print(f"Channel {ch_id} added.")
 
     def appendData(self, enum_data):
         """
         Write data from list to the respective channels
         """
-        while self.lock:
-            # TODO: lock acquire timeout
-            pass
-        self.lock = True
-
         for ch_id, ch_data in enum_data:
             self.channels[int(ch_id)].data = ch_data
+            # TODO: Convert data if needed
+            # TODO: Call plot
 
         if self.save:
             # TODO: write to csv file
             pass
 
-        self.lock = False
-
     def getData(self, ch_id):
-        while self.lock:
-            # TODO: lock acquire timeout
-            pass
-        self.lock = True
         data = self.channels[ch_id].data
-        self.lock = False
         return data
