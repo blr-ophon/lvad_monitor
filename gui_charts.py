@@ -7,6 +7,11 @@ import threading
 # canvas: FigureCanvasTkAgg
 # plot1: pplt.Axes
 
+line_colors = [
+    'red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'black', 'white',  
+    'orange', 'purple', 'brown', 'pink', 'gray', 'lightblue', 'lime', 'violet'  
+]
+
 class ChartGUI():
     """
     Single chart with graph and manageable channels to plot
@@ -18,21 +23,32 @@ class ChartGUI():
         self.fig = None
         self.canvas = None
         self.axes = None
+        self.lines = []
 
         self.checkbox_vars = []
-
-        # Plotting
-        self.x_data = []
-        self.y_data = []
-        self.index = 0
 
         self.drawGraph()
         self.drawChannelMenu()
 
-    def plot(self):
+    def plot(self, x_data, y_data_list):
+        # self.x_data.append(self.index)
+        # self.y_data.append(self.index**2)
+
+        if x_data:
+            self.axes.set_xlim(0, x_data[-1])
+            self.axes.set_ylim(-10, 10)
+            for i, y_data in enumerate(y_data_list):
+                if self.checkbox_vars[i].get():
+                    self.lines[i].set_data(x_data, y_data)
+                else:
+                    self.lines[i].set_data([], [])
+            self.canvas.draw()
+
+
+    def dep_plot(self):
         # self.axes.set_xlim([min(data), max(data)])
         # self.axes.set_ylim([min(data), max(data)])
-        self.start_animation()
+        # self.start_animation()
 
         # plotting the graph
         # self.axes.plot(y)
@@ -58,22 +74,13 @@ class ChartGUI():
         self.canvas.get_tk_widget().grid(column=1, row=0, rowspan=17,
                                          columnspan=4, sticky="N")
 
-        ##########
-        self.line, = self.axes.plot([], [], 'b-')  # Initialize an empty plot
-        self.start_animation()
-        ##########
-
-    def start_animation(self):
-        if self.index <= 100:
-            self.x_data.append(self.index)
-            self.y_data.append(self.index**2)
-
-            self.line.set_data(self.x_data, self.y_data)
-            self.axes.set_xlim(0, 100)
-            self.axes.set_ylim(0, 10000)
-            self.canvas.draw()
-
-            self.index += 1
+        # Initialize empty plots
+        line0, = self.axes.plot([], [], 'b-')
+        line0.set_color(line_colors[0])
+        line1, = self.axes.plot([], [], 'b-')
+        line1.set_color(line_colors[1])
+        self.lines.append(line0)
+        self.lines.append(line1)
 
     def drawChannelMenu(self):
         """
@@ -107,7 +114,7 @@ class ChartsManagerGUI():
     """
     def __init__(self, root, dataStream):
         self.root = root
-        self.dataCtrl = dataStream
+        self.dataStream = dataStream
 
         self.frames = []
         self.framesCol = 0
@@ -120,6 +127,12 @@ class ChartsManagerGUI():
         # Threading
         self.plotThread = None
         self.new_data = None
+
+        # PLOTTING
+        self.x_data = []
+        self.y_data_list = [[], []] # TODO: dict
+        self.period = 1
+        self.plot_index = 0
 
     def initPlotTask(self):
         self.plotThread = threading.Thread(target=self.plotData, daemon=True)
@@ -134,11 +147,17 @@ class ChartsManagerGUI():
             with self.new_data:
                 if self.total_charts > 0:
                     for chart in self.Charts:
-                        chart.plot()
+                        chart.plot(self.x_data, self.y_data_list)
                 self.new_data.wait()
 
     def triggerPlot(self):
         with self.new_data:
+            # Append new data from datastream to plot data
+            self.plot_index += 1
+            self.x_data.append(float(self.period * self.plot_index))
+            for ch_index, channels in self.dataStream.channels.items():
+                self.y_data_list[ch_index].append(float(channels.data))
+
             self.new_data.notify()
 
     def newChart(self):
@@ -170,7 +189,7 @@ class ChartsManagerGUI():
             sticky="NW"
         )
 
-        new_chart = ChartGUI(frame, self.dataCtrl.channels)
+        new_chart = ChartGUI(frame, self.dataStream.channels)
         self.Charts.append(new_chart)
 
         self.adjustRootFrame()
